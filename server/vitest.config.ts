@@ -7,7 +7,14 @@ export default defineConfig({
     passWithNoTests: true,
     coverage: {
       provider: 'v8',
+      include: ['src/services/search.ts', 'src/services/vote.ts', 'src/services/trending.ts', 'src/services/github-fetcher.ts', 'src/services/tag.ts'],
       reporter: ['text', 'html'],
+      thresholds: {
+        lines: 80,
+        branches: 60,
+        functions: 80,
+        statements: 80,
+      },
     },
   },
 });

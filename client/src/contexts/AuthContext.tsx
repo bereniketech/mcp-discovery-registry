@@ -9,8 +9,21 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const e2eAccessToken = import.meta.env.VITE_E2E_ACCESS_TOKEN as string | undefined;
 
   useEffect(() => {
+    if (e2eAccessToken) {
+      setSession({
+        access_token: e2eAccessToken,
+        user: {
+          email: 'e2e@example.com',
+          user_metadata: { user_name: 'e2e-user' },
+        },
+      });
+      setLoading(false);
+      return;
+    }
+
     if (!supabase) {
       setLoading(false);
       return;
@@ -46,6 +59,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   async function signInWithGitHub() {
+    if (e2eAccessToken) {
+      return;
+    }
+
     if (!supabase) {
       throw new Error('Authentication is not configured in this environment.');
     }
