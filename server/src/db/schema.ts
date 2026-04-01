@@ -147,6 +147,7 @@ export const tags = pgTable('tags', {
     .default(sql`gen_random_uuid()`),
   name: text('name').notNull().unique(),
   slug: text('slug').notNull().unique(),
+  usageCount: integer('usage_count').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .default(sql`now()`),

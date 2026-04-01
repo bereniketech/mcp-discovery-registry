@@ -22,6 +22,13 @@
       "when": 1743670800000,
       "tag": "0002_server_github_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775001600000,
+      "tag": "0003_tags_usage_count",
+      "breakpoints": true
     }
   ]
 }

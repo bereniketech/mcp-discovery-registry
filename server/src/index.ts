@@ -6,8 +6,13 @@ import { db } from './db/index.js';
 import { errorHandler } from './middleware/error.js';
 import healthRouter from './routes/health.js';
 import createServersRouter from './routes/servers.js';
+import createServerActionsRouter from './routes/server-actions.js';
+import createMeRouter from './routes/me.js';
 import { GitHubFetcherService } from './services/github-fetcher.js';
 import { ServerService } from './services/server.js';
+import { VoteService } from './services/vote.js';
+import { FavoriteService } from './services/favorite.js';
+import { TagService } from './services/tag.js';
 
 const app = express();
 
@@ -44,7 +49,15 @@ export const writeLimiter = rateLimit({
 app.use('/api/v1/health', healthRouter);
 const githubFetcherService = new GitHubFetcherService();
 const serverService = new ServerService(githubFetcherService);
+const voteService = new VoteService();
+const favoriteService = new FavoriteService();
+const tagService = new TagService();
 app.use('/api/v1/servers', createServersRouter(serverService));
+app.use('/api/v1/servers', createServerActionsRouter(voteService, favoriteService, tagService));
+app.use('/api/v1/me', createMeRouter({
+  listFavoritesByUser: favoriteService.listFavoritesByUser.bind(favoriteService),
+  listByAuthor: serverService.listByAuthor.bind(serverService),
+}));
 
 // Make db available to request handlers via app.locals
 app.locals['db'] = db;

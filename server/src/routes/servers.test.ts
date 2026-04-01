@@ -170,4 +170,154 @@ describe('servers routes', () => {
     expect(response.status).toBe(200);
     expect(json).toEqual({ data: { slug: 'repo', categories: ['utilities'], tags: ['cli'] } });
   });
+
+  describe('GET / — list with search params', () => {
+    function makeListResult(items: unknown[] = [], total = 0) {
+      return {
+        items,
+        page: 1,
+        perPage: 20,
+        totalItems: total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / 20),
+      };
+    }
+
+    it('passes q param to service list', async () => {
+      const service = {
+        create: vi.fn(),
+        getBySlug: vi.fn(),
+        list: vi.fn().mockResolvedValue(makeListResult()),
+      };
+
+      const app = createTestApp(service);
+      const srv = app.listen(0);
+      const { port } = srv.address() as AddressInfo;
+
+      await fetch(`http://127.0.0.1:${port}/api/v1/servers?q=postgres`);
+      srv.close();
+
+      expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ q: 'postgres' }));
+    });
+
+    it('passes category param to service list', async () => {
+      const service = {
+        create: vi.fn(),
+        getBySlug: vi.fn(),
+        list: vi.fn().mockResolvedValue(makeListResult()),
+      };
+
+      const app = createTestApp(service);
+      const srv = app.listen(0);
+      const { port } = srv.address() as AddressInfo;
+
+      await fetch(`http://127.0.0.1:${port}/api/v1/servers?category=utilities`);
+      srv.close();
+
+      expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ category: 'utilities' }));
+    });
+
+    it('passes tags array to service list', async () => {
+      const service = {
+        create: vi.fn(),
+        getBySlug: vi.fn(),
+        list: vi.fn().mockResolvedValue(makeListResult()),
+      };
+
+      const app = createTestApp(service);
+      const srv = app.listen(0);
+      const { port } = srv.address() as AddressInfo;
+
+      await fetch(`http://127.0.0.1:${port}/api/v1/servers?tags[]=cli&tags[]=sse`);
+      srv.close();
+
+      expect(service.list).toHaveBeenCalledWith(
+        expect.objectContaining({ tags: expect.arrayContaining(['cli', 'sse']) }),
+      );
+    });
+
+    it('passes sort param to service list', async () => {
+      const service = {
+        create: vi.fn(),
+        getBySlug: vi.fn(),
+        list: vi.fn().mockResolvedValue(makeListResult()),
+      };
+
+      const app = createTestApp(service);
+      const srv = app.listen(0);
+      const { port } = srv.address() as AddressInfo;
+
+      await fetch(`http://127.0.0.1:${port}/api/v1/servers?sort=stars`);
+      srv.close();
+
+      expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ sort: 'stars' }));
+    });
+
+    it('returns 422 for invalid sort value', async () => {
+      const service = {
+        create: vi.fn(),
+        getBySlug: vi.fn(),
+        list: vi.fn().mockResolvedValue(makeListResult()),
+      };
+
+      const app = createTestApp(service);
+      const srv = app.listen(0);
+      const { port } = srv.address() as AddressInfo;
+
+      const response = await fetch(`http://127.0.0.1:${port}/api/v1/servers?sort=invalid`);
+      srv.close();
+
+      expect(response.status).toBe(422);
+    });
+
+    it('returns correct meta in pagination response', async () => {
+      const service = {
+        create: vi.fn(),
+        getBySlug: vi.fn(),
+        list: vi.fn().mockResolvedValue({
+          items: [],
+          page: 2,
+          perPage: 10,
+          totalItems: 25,
+          totalPages: 3,
+        }),
+      };
+
+      const app = createTestApp(service);
+      const srv = app.listen(0);
+      const { port } = srv.address() as AddressInfo;
+
+      const response = await fetch(`http://127.0.0.1:${port}/api/v1/servers?page=2&per_page=10`);
+      const json = (await response.json()) as { meta: unknown };
+      srv.close();
+
+      expect(response.status).toBe(200);
+      expect(json.meta).toEqual({ page: 2, per_page: 10, total: 25, total_pages: 3 });
+    });
+
+    it('passes all search filters combined', async () => {
+      const service = {
+        create: vi.fn(),
+        getBySlug: vi.fn(),
+        list: vi.fn().mockResolvedValue(makeListResult()),
+      };
+
+      const app = createTestApp(service);
+      const srv = app.listen(0);
+      const { port } = srv.address() as AddressInfo;
+
+      await fetch(
+        `http://127.0.0.1:${port}/api/v1/servers?q=mcp&category=utilities&tags[]=cli&sort=newest&page=1&per_page=20`,
+      );
+      srv.close();
+
+      expect(service.list).toHaveBeenCalledWith({
+        q: 'mcp',
+        category: 'utilities',
+        tags: ['cli'],
+        sort: 'newest',
+        page: 1,
+        perPage: 20,
+      });
+    });
+  });
 });

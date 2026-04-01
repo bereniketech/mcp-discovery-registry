@@ -1,0 +1,2 @@
+ALTER TABLE "tags"
+  ADD COLUMN IF NOT EXISTS "usage_count" integer DEFAULT 0 NOT NULL;

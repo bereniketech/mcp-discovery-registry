@@ -15,7 +15,14 @@ const writeLimiter = rateLimit({
 type ServerServiceContract = {
   create: (params: { githubUrl: string; userId: string }) => Promise<unknown>;
   getBySlug: (slug: string) => Promise<unknown>;
-  list: (params: { page?: number; perPage?: number }) => Promise<{
+  list: (params: {
+    q?: string;
+    category?: string;
+    tags?: string[];
+    sort?: 'trending' | 'newest' | 'stars' | 'votes';
+    page?: number;
+    perPage?: number;
+  }) => Promise<{
     items: unknown[];
     page: number;
     perPage: number;
@@ -62,15 +69,21 @@ export function createServersRouter(service: ServerServiceContract): Router {
     }
 
     try {
-      const listParams: { page?: number; perPage?: number } = {};
+      const listParams: {
+        q?: string;
+        category?: string;
+        tags?: string[];
+        sort?: 'trending' | 'newest' | 'stars' | 'votes';
+        page?: number;
+        perPage?: number;
+      } = {};
 
-      if (parsed.data.page !== undefined) {
-        listParams.page = parsed.data.page;
-      }
-
-      if (parsed.data.per_page !== undefined) {
-        listParams.perPage = parsed.data.per_page;
-      }
+      if (parsed.data.q !== undefined) listParams.q = parsed.data.q;
+      if (parsed.data.category !== undefined) listParams.category = parsed.data.category;
+      if (parsed.data.tags !== undefined) listParams.tags = parsed.data.tags;
+      if (parsed.data.sort !== undefined) listParams.sort = parsed.data.sort;
+      if (parsed.data.page !== undefined) listParams.page = parsed.data.page;
+      if (parsed.data.per_page !== undefined) listParams.perPage = parsed.data.per_page;
 
       const result = await serverService.list(listParams);
 

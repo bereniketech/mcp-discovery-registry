@@ -1,7 +1,7 @@
 ---
 task: 006
 feature: mcp-discovery-registry
-status: pending
+status: complete
 depends_on: [003, 004]
 ---
 
@@ -61,20 +61,57 @@ _Skills: /code-writing-software-development — service layer, toggle logic; /ap
 ---
 
 ## Acceptance Criteria
-- [ ] Vote POST creates vote if none exists, removes if already voted (toggle)
-- [ ] servers.upvote_count stays in sync with actual vote count
-- [ ] Favorite POST toggles correctly
-- [ ] Tag POST creates and associates tag; enforces lowercase-hyphen format
-- [ ] Duplicate tag on same server returns 409
-- [ ] GET /me/favorites returns current user's favorited servers
-- [ ] GET /me/submissions returns current user's submitted servers
-- [ ] All write endpoints return 401 for unauthenticated requests
-- [ ] `/verify` passes
+- [x] Vote POST creates vote if none exists, removes if already voted (toggle)
+- [x] servers.upvote_count stays in sync with actual vote count
+- [x] Favorite POST toggles correctly
+- [x] Tag POST creates and associates tag; enforces lowercase-hyphen format
+- [x] Duplicate tag on same server returns 409
+- [x] GET /me/favorites returns current user's favorited servers
+- [x] GET /me/submissions returns current user's submitted servers
+- [x] All write endpoints return 401 for unauthenticated requests
+- [x] `/verify` passes
 
 ---
 
 ## Handoff to Next Task
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `server/src/services/vote.ts`
+- `server/src/services/favorite.ts`
+- `server/src/services/tag.ts`
+- `server/src/services/server.ts`
+- `server/src/routes/server-actions.ts`
+- `server/src/routes/me.ts`
+- `server/src/schemas/server.ts`
+- `server/src/index.ts`
+- `server/src/services/vote.test.ts`
+- `server/src/services/favorite.test.ts`
+- `server/src/services/tag.test.ts`
+- `server/src/routes/server-actions.test.ts`
+- `server/src/routes/me.test.ts`
+- `server/src/services/search.test.ts`
+- `server/src/db/schema.ts`
+- `server/migrations/0003_tags_usage_count.sql`
+- `server/migrations/meta/_journal.json`
+- `bug-log.md`
+
+**Decisions made:**
+- Implemented toggle semantics as `POST` actions returning state (`voted`/`favorited`) and synchronized counters (`votes_count`, `favorites_count`) from source tables inside transactions.
+- Enforced tag format via normalization (`lowercase-hyphen`) in `TagService.normalizeTag` and returned `409 duplicate_tag` for duplicate server-tag association.
+- Added owner check (`403 forbidden`) for tag writes to align with server ownership and RLS intent.
+- Added `usage_count` to tags schema with migration `0003` and updated usage count after each tag association.
+
+**Context for next task:**
+- New endpoints are wired and covered:
+	- `POST /api/v1/servers/:id/vote`
+	- `POST /api/v1/servers/:id/favorite`
+	- `POST /api/v1/servers/:id/tags`
+	- `GET /api/v1/me/favorites`
+	- `GET /api/v1/me/submissions`
+- Verification completed successfully via command-equivalent workflow:
+	- `npm.cmd run lint`
+	- `npm.cmd run typecheck`
+	- `npm.cmd run test`
+	- `npm.cmd run build`
+
+**Open questions:**
+- Acceptance text references `upvote_count`, while schema uses `votes_count`; implementation keeps `votes_count` in sync.

@@ -1,0 +1,66 @@
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../db/index.js', () => ({ db: {} }));
+
+import { FavoriteService } from './favorite.js';
+
+function whereResult<T>(rows: T[]) {
+  return {
+    limit: vi.fn().mockResolvedValue(rows),
+    then: (onFulfilled: (value: T[]) => unknown) => Promise.resolve(rows).then(onFulfilled),
+  };
+}
+
+function makeFavoriteDb(selectRows: unknown[][]) {
+  const queue = [...selectRows];
+
+  const tx = {
+    select: vi.fn().mockImplementation(() => ({
+      from: vi.fn().mockImplementation(() => ({
+        where: vi.fn().mockImplementation(() => whereResult(queue.shift() ?? [])),
+      })),
+    })),
+    delete: vi.fn().mockImplementation(() => ({
+      where: vi.fn().mockResolvedValue(undefined),
+    })),
+    insert: vi.fn().mockImplementation(() => ({
+      values: vi.fn().mockResolvedValue(undefined),
+    })),
+    update: vi.fn().mockImplementation(() => ({
+      set: vi.fn().mockImplementation(() => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      })),
+    })),
+  };
+
+  return {
+    transaction: vi.fn(async (cb: (client: typeof tx) => Promise<unknown>) => cb(tx)),
+    tx,
+  };
+}
+
+describe('FavoriteService.toggleFavorite', () => {
+  it('creates favorite when one does not exist', async () => {
+    const mockDb = makeFavoriteDb([[{ id: 'server-1' }], [], [{ count: 1 }]]);
+    const service = new FavoriteService(mockDb as unknown as never);
+
+    const result = await service.toggleFavorite({ userId: 'user-1', serverId: 'server-1' });
+
+    expect(result).toEqual({ favorited: true, favoritesCount: 1 });
+    expect(mockDb.tx.insert).toHaveBeenCalledTimes(1);
+    expect(mockDb.tx.delete).not.toHaveBeenCalled();
+    expect(mockDb.tx.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes favorite when one already exists', async () => {
+    const mockDb = makeFavoriteDb([[{ id: 'server-1' }], [{ id: 'favorite-1' }], [{ count: 0 }]]);
+    const service = new FavoriteService(mockDb as unknown as never);
+
+    const result = await service.toggleFavorite({ userId: 'user-1', serverId: 'server-1' });
+
+    expect(result).toEqual({ favorited: false, favoritesCount: 0 });
+    expect(mockDb.tx.delete).toHaveBeenCalledTimes(1);
+    expect(mockDb.tx.insert).not.toHaveBeenCalled();
+    expect(mockDb.tx.update).toHaveBeenCalledTimes(1);
+  });
+});

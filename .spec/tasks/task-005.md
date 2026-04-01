@@ -1,7 +1,7 @@
 ---
 task: 005
 feature: mcp-discovery-registry
-status: pending
+status: done
 depends_on: [002, 003]
 ---
 
@@ -73,7 +73,21 @@ _Skills: /code-writing-software-development — search logic; /postgres-patterns
 ---
 
 ## Handoff to Next Task
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `server/src/schemas/server.ts` — added `q`, `category`, `tags`, `sort` fields to `listServersQuerySchema`
+- `server/src/services/search.ts` — new `SearchService` class with full-text search, composite ranking, category/tag filtering, sort options, pagination; exports `buildTsQueryString` and `computeCompositeScore` helpers
+- `server/src/services/server.ts` — `ServerService` now accepts `SearchService` via constructor injection; `list()` delegates to `SearchService.search()`; `ListServerParams` extends `SearchParams`
+- `server/src/routes/servers.ts` — `ServerServiceContract.list` updated to accept full search params; route handler forwards `q`, `category`, `tags`, `sort`, `page`, `perPage`
+- `server/src/services/search.test.ts` — new: unit tests for `buildTsQueryString` (6), `computeCompositeScore` (4), `SearchService.search` (7)
+- `server/src/routes/servers.test.ts` — 7 new integration tests for search params forwarding, combined filters, pagination meta, invalid sort 422
+
+**Decisions made:**
+- `SearchService` uses raw SQL via drizzle `sql` template for tsvector/tsrank and `ARRAY_AGG` for categories/tags in a single query (avoids N+1)
+- Composite score formula: `ts_rank * 10 + votes * 2 + stars + recency(30-day half-life) * 5`
+- Category/tag filters use `EXISTS` subqueries (does not affect `ARRAY_AGG` grouping)
+- `RawServerRow` / `RawCountRow` use `extends Record<string, unknown>` to satisfy drizzle's `execute<T>` generic constraint
+- `vi.mock('../db/index.js')` in search.test.ts prevents DATABASE_URL env requirement during unit tests
+
+**Context for next task:** Search endpoint is fully functional. `GET /api/v1/servers` accepts `q`, `category`, `tags[]`, `sort`, `page`, `per_page`. All TypeScript types are strict (0 errors). `tsc --noEmit` and `vitest run` both pass clean.
+
+**Open questions:** None.

@@ -1,4 +1,4 @@
-import { count, desc, eq, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import {
   categories,
@@ -9,16 +9,15 @@ import {
 } from '../db/schema.js';
 import type { GitHubFetcherService, GitHubRepositoryMetadata } from './github-fetcher.js';
 import { AppError } from '../utils/app-error.js';
+import { SearchService } from './search.js';
+import type { SearchParams } from './search.js';
 
 interface CreateServerParams {
   githubUrl: string;
   userId: string;
 }
 
-interface ListServerParams {
-  page?: number;
-  perPage?: number;
-}
+type ListServerParams = SearchParams;
 
 export interface ServerListResult<T> {
   items: T[];
@@ -38,10 +37,15 @@ export interface ServerResponse extends ServerRow {
 }
 
 export class ServerService {
+  private readonly searchService: SearchService;
+
   constructor(
     private readonly githubFetcher: Pick<GitHubFetcherService, 'fetchRepositoryMetadata'>,
     private readonly database: DbClient = db,
-  ) {}
+    searchService?: SearchService,
+  ) {
+    this.searchService = searchService ?? new SearchService(database);
+  }
 
   async create({ githubUrl, userId }: CreateServerParams): Promise<ServerResponse> {
     const metadata = await this.githubFetcher.fetchRepositoryMetadata(githubUrl);
@@ -110,40 +114,26 @@ export class ServerService {
   }
 
   async list(params: ListServerParams = {}): Promise<ServerListResult<ServerResponse>> {
-    const page = Math.max(1, params.page ?? 1);
-    const perPage = Math.min(100, Math.max(1, params.perPage ?? 20));
-    const offset = (page - 1) * perPage;
+    return this.searchService.search(params) as Promise<ServerListResult<ServerResponse>>;
+  }
 
-    const countRows = await this.database
-      .select({ total: count() })
-      .from(servers);
-
-    const total = countRows[0]?.total ?? 0;
-
-    const serverRows = await this.database
+  async listByAuthor(userId: string): Promise<ServerResponse[]> {
+    const rows = await this.database
       .select()
       .from(servers)
-      .orderBy(desc(servers.createdAt))
-      .limit(perPage)
-      .offset(offset);
+      .where(eq(servers.authorId, userId));
 
-    const serverIds = serverRows.map((row) => row.id);
-    const categoriesByServer = await this.getCategoriesMap(serverIds);
-    const tagsByServer = await this.getTagsMap(serverIds);
+    const serverIds = rows.map((row) => row.id);
+    const [categoriesMap, tagsMap] = await Promise.all([
+      this.getCategoriesMap(serverIds),
+      this.getTagsMap(serverIds),
+    ]);
 
-    const items = serverRows.map((row) => ({
+    return rows.map((row) => ({
       ...row,
-      categories: categoriesByServer.get(row.id) ?? [],
-      tags: tagsByServer.get(row.id) ?? [],
+      categories: categoriesMap.get(row.id) ?? [],
+      tags: tagsMap.get(row.id) ?? [],
     }));
-
-    return {
-      items,
-      page,
-      perPage,
-      totalItems: total,
-      totalPages: total === 0 ? 0 : Math.ceil(total / perPage),
-    };
   }
 
   private async generateUniqueSlug(name: string): Promise<string> {
