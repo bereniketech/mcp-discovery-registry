@@ -7,16 +7,22 @@
     "build": "node ../node_modules/typescript/bin/tsc -p tsconfig.json",
     "dev": "node --watch dist/index.js",
     "lint": "node ../node_modules/eslint/bin/eslint.js src --ext .ts",
-    "test": "node ../node_modules/vitest/vitest.mjs run --passWithNoTests"
+    "test": "node ../node_modules/vitest/vitest.mjs run --passWithNoTests",
+    "db:generate": "node ../node_modules/drizzle-kit/bin.cjs generate --config=drizzle.config.ts",
+    "db:migrate": "node ../node_modules/drizzle-kit/bin.cjs migrate --config=drizzle.config.ts",
+    "db:seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
     "@mcp-registry/shared": "file:../shared",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.35.3",
+    "drizzle-orm": "^0.36.0",
     "express": "^4.21.1",
+    "postgres": "^3.4.4",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0"
+    "@types/express": "^5.0.0",
+    "drizzle-kit": "^0.26.0",
+    "tsx": "^4.19.2"
   }
 }
