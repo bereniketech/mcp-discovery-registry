@@ -177,7 +177,7 @@ test('submit flow: preview and confirm submission', async ({ page }) => {
   await page.getByLabel('GitHub URL').fill('https://github.com/org/new-server');
   await page.getByRole('button', { name: 'Fetch metadata preview' }).click();
 
-  await expect(page.getByRole('heading', { name: 'New Server' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'New Server', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Confirm submission' }).click();
 
   await expect(page).toHaveURL(/\/servers\/new-server$/);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AuthContext, type AuthContextValue, type AuthSession } from './auth-context.js';
 import { supabase } from '../lib/supabase.js';
 
@@ -56,9 +56,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       mounted = false;
       authSubscription.subscription.unsubscribe();
     };
-  }, []);
+  }, [e2eAccessToken]);
 
-  async function signInWithGitHub() {
+  const signInWithGitHub = useCallback(async () => {
     if (e2eAccessToken) {
       return;
     }
@@ -76,9 +76,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (error) {
       throw error;
     }
-  }
+  }, [e2eAccessToken]);
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     if (!supabase) {
       return;
     }
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (error) {
       throw error;
     }
-  }
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       signInWithGitHub,
       signOut,
     }),
-    [loading, session],
+    [loading, session, signInWithGitHub, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
