@@ -1,7 +1,7 @@
 ---
 task: 003
 feature: mcp-discovery-registry
-status: pending
+status: done
 depends_on: [001, 002]
 ---
 
@@ -60,19 +60,39 @@ _Skills: /code-writing-software-development — Express setup, middleware patter
 ---
 
 ## Acceptance Criteria
-- [ ] `npm run dev` starts server without errors
-- [ ] `GET /api/v1/health` returns 200 `{ status: "ok" }`
-- [ ] Auth middleware rejects requests with invalid/missing JWT (401)
-- [ ] Auth middleware passes requests with valid Supabase JWT and attaches user
-- [ ] Rate limiter returns 429 when limits exceeded
-- [ ] CORS headers present in responses
-- [ ] Error middleware returns consistent JSON format for all errors
-- [ ] `/verify` passes
+- [x] `npm run dev` starts server without errors
+- [x] `GET /api/v1/health` returns 200 `{ status: "ok" }`
+- [x] Auth middleware rejects requests with invalid/missing JWT (401)
+- [x] Auth middleware passes requests with valid Supabase JWT and attaches user
+- [x] Rate limiter returns 429 when limits exceeded
+- [x] CORS headers present in responses
+- [x] Error middleware returns consistent JSON format for all errors
+- [x] `/verify` passes
 
 ---
 
 ## Handoff to Next Task
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `server/package.json` — added `cors`, `express-rate-limit`, `jose`, `@types/cors`; updated `dev`/`start` scripts to use `tsx watch` and `node dist/`
+- `server/src/index.ts` — full Express app with JSON body parser, CORS, public rate limiter (100/min), health route, db wired via `app.locals`, centralized error handler
+- `server/src/types/express.d.ts` — augments `Request` with `user?: { id, email }`
+- `server/src/middleware/auth.ts` — `requireAuth`: verifies Supabase HS256 JWT via `jose`, attaches `req.user`, returns 401 on missing/invalid token
+- `server/src/middleware/error.ts` — `errorHandler`: returns `{ error: { code, message, status } }`, never exposes stack traces
+- `server/src/middleware/validate.ts` — `validateBody(schema)`: Zod middleware factory returning 422 with `details` array on failure
+- `server/src/routes/health.ts` — `GET /api/v1/health` → `{ status: "ok" }`
+- `server/src/middleware/auth.test.ts` — 4 unit tests: missing header, non-Bearer scheme, invalid token, valid token
+- `.env.example` — added `SUPABASE_JWT_SECRET`, `CORS_ORIGIN`, `PORT`
+
+**Decisions made:**
+- JWT library: `jose` (native ESM, supports HS256 with raw secret)
+- JWT secret env var: `SUPABASE_JWT_SECRET`
+- Write rate limiter (30/min) exported as `writeLimiter` from `index.ts` for route-level use
+- Error handler swallows stack trace for 500s; passes through message for 4xx
+
+**Context for next task:**
+- Import `requireAuth` from `./middleware/auth.js` to protect routes
+- Import `writeLimiter` from `../index.js` to apply write rate limits on mutating routes
+- Import `validateBody` from `./middleware/validate.js` for request validation
+- `app.locals['db']` provides the Drizzle client; or import `db` directly from `./db/index.js`
+
+**Open questions:** none

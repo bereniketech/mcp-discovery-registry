@@ -55,7 +55,7 @@ export const servers = pgTable('servers', {
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   description: text('description').notNull(),
-  repositoryUrl: text('repository_url').notNull(),
+  githubUrl: text('github_url').notNull().unique(),
   websiteUrl: text('website_url'),
   authorId: uuid('author_id')
     .notNull()
@@ -63,6 +63,10 @@ export const servers = pgTable('servers', {
   votesCount: integer('votes_count').notNull().default(0),
   favoritesCount: integer('favorites_count').notNull().default(0),
   readmeContent: text('readme_content'),
+  githubStars: integer('github_stars').notNull().default(0),
+  githubForks: integer('github_forks').notNull().default(0),
+  openIssues: integer('open_issues').notNull().default(0),
+  lastCommitAt: timestamp('last_commit_at', { withTimezone: true }),
   searchVector: tsvector('search_vector'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()

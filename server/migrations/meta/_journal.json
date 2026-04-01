@@ -8,6 +8,20 @@
       "when": 1743498000000,
       "tag": "0000_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1743584400000,
+      "tag": "0001_search_and_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1743670800000,
+      "tag": "0002_server_github_metadata",
+      "breakpoints": true
     }
   ]
 }
