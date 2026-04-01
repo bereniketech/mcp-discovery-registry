@@ -6,8 +6,8 @@ import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { ConfigGenerator } from '../components/ConfigGenerator.js';
 import { TagInput } from '../components/TagInput.js';
+import { useAuth } from '../hooks/useAuth.js';
 import { apiClient, type Server, type ToolSchema } from '../lib/api.js';
-import { supabase } from '../lib/supabase.js';
 
 const STALE_DAYS_THRESHOLD = 90;
 
@@ -130,21 +130,9 @@ function formatDate(dateValue: string | null | undefined): string {
   return parsed.toLocaleDateString();
 }
 
-async function getAccessToken(): Promise<string | null> {
-  if (!supabase) {
-    return null;
-  }
-
-  const { data, error } = await supabase.auth.getSession();
-  if (error) {
-    return null;
-  }
-
-  return data.session?.access_token ?? null;
-}
-
 export function ServerDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const { session, signInWithGitHub } = useAuth();
   const [server, setServer] = useState<Server | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -258,9 +246,10 @@ export function ServerDetail() {
     setVoteCount((count) => Math.max(0, count + (nextState ? 1 : -1)));
 
     try {
-      const token = await getAccessToken();
+      const token = session?.access_token;
       if (!token) {
-        throw new Error('Sign in is required to vote.');
+        await signInWithGitHub();
+        throw new Error('Redirecting to GitHub sign-in.');
       }
 
       const result = await apiClient.toggleVote(server.id, token);
@@ -287,9 +276,10 @@ export function ServerDetail() {
     setFavoritesCount((count) => Math.max(0, count + (nextState ? 1 : -1)));
 
     try {
-      const token = await getAccessToken();
+      const token = session?.access_token;
       if (!token) {
-        throw new Error('Sign in is required to favorite.');
+        await signInWithGitHub();
+        throw new Error('Redirecting to GitHub sign-in.');
       }
 
       const result = await apiClient.toggleFavorite(server.id, token);
@@ -311,9 +301,10 @@ export function ServerDetail() {
 
     setActionError(null);
 
-    const token = await getAccessToken();
+    const token = session?.access_token;
     if (!token) {
-      throw new Error('Sign in is required to add tags.');
+      await signInWithGitHub();
+      throw new Error('Redirecting to GitHub sign-in.');
     }
 
     await apiClient.addTag(server.id, tag, token);

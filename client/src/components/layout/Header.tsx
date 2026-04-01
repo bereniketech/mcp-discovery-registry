@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { AuthButton } from '../AuthButton.js';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -30,9 +31,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
         />
       </label>
 
-      <button className="auth-button" type="button">
-        Sign in
-      </button>
+      <AuthButton />
     </header>
   );
 }

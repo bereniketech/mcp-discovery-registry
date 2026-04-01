@@ -110,6 +110,38 @@ body {
   font-weight: 700;
 }
 
+.auth-button-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.auth-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0 0.7rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  background: hsl(var(--surface));
+  color: hsl(var(--foreground));
+  text-decoration: none;
+}
+
+.auth-avatar,
+.profile-avatar {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 9999px;
+}
+
+.auth-button-secondary {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--surface));
+  color: hsl(var(--foreground));
+}
+
 .layout-body {
   display: grid;
   grid-template-columns: 18rem minmax(0, 1fr);
@@ -521,6 +553,24 @@ body {
   color: hsl(var(--muted-foreground));
 }
 
+.profile-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.profile-list {
+  margin: 0.8rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.profile-list a {
+  color: hsl(var(--foreground));
+}
+
 @keyframes fade-slide-in {
   to {
     opacity: 1;
@@ -610,8 +660,13 @@ body {
     order: 3;
   }
 
-  .auth-button {
+  .auth-button,
+  .auth-button-group {
     justify-self: start;
+  }
+
+  .auth-button-group {
+    flex-wrap: wrap;
   }
 
   .trending-list {

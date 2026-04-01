@@ -2,7 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { requireAuth } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
-import { createServerSchema, listServersQuerySchema } from '../schemas/server.js';
+import { createServerSchema, listServersQuerySchema, previewServerSchema } from '../schemas/server.js';
 
 const writeLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -13,7 +13,8 @@ const writeLimiter = rateLimit({
 });
 
 type ServerServiceContract = {
-  create: (params: { githubUrl: string; userId: string }) => Promise<unknown>;
+  create: (params: { githubUrl: string; userId: string; categorySlugs?: string[] }) => Promise<unknown>;
+  preview: (githubUrl: string) => Promise<unknown>;
   getBySlug: (slug: string) => Promise<unknown>;
   list: (params: {
     q?: string;
@@ -35,11 +36,21 @@ export function createServersRouter(service: ServerServiceContract): Router {
   const router = Router();
   const serverService = service;
 
+  router.post('/preview', writeLimiter, requireAuth, validateBody(previewServerSchema), async (req, res, next) => {
+    try {
+      const preview = await serverService.preview(req.body.github_url);
+      res.json({ data: preview });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post('/', writeLimiter, requireAuth, validateBody(createServerSchema), async (req, res, next) => {
     try {
       const created = await serverService.create({
         githubUrl: req.body.github_url,
         userId: req.user?.id ?? '',
+        categorySlugs: req.body.categories,
       });
 
       res.status(201).json({ data: created });

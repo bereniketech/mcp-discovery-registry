@@ -8,6 +8,7 @@ import { AppError } from '../utils/app-error.js';
 
 function createTestApp(service: {
   create: ReturnType<typeof vi.fn>;
+  preview: ReturnType<typeof vi.fn>;
   getBySlug: ReturnType<typeof vi.fn>;
   list: ReturnType<typeof vi.fn>;
 }) {
@@ -43,6 +44,7 @@ describe('servers routes', () => {
   it('returns 401 for POST without auth token', async () => {
     const service = {
       create: vi.fn(),
+      preview: vi.fn(),
       getBySlug: vi.fn(),
       list: vi.fn(),
     };
@@ -87,6 +89,7 @@ describe('servers routes', () => {
         categories: [],
         tags: [],
       }),
+      preview: vi.fn(),
       getBySlug: vi.fn(),
       list: vi.fn(),
     };
@@ -116,7 +119,50 @@ describe('servers routes', () => {
     expect(service.create).toHaveBeenCalledWith({
       githubUrl: 'https://github.com/org/repo',
       userId: 'user-1',
+      categorySlugs: [],
     });
+  });
+
+  it('returns preview metadata for valid preview request', async () => {
+    const token = await createAuthToken('user-1');
+    const service = {
+      create: vi.fn(),
+      preview: vi.fn().mockResolvedValue({
+        name: 'repo',
+        description: 'preview desc',
+        githubUrl: 'https://github.com/org/repo',
+        githubStars: 22,
+        githubForks: 3,
+        openIssues: 1,
+        lastCommitAt: null,
+      }),
+      getBySlug: vi.fn(),
+      list: vi.fn(),
+    };
+
+    const app = createTestApp(service);
+    const server = app.listen(0);
+    const { port } = server.address() as AddressInfo;
+
+    const response = await fetch(`http://127.0.0.1:${port}/api/v1/servers/preview`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ github_url: 'https://github.com/org/repo' }),
+    });
+
+    const json = await response.json();
+    server.close();
+
+    expect(response.status).toBe(200);
+    expect(json).toEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({ githubUrl: 'https://github.com/org/repo' }),
+      }),
+    );
+    expect(service.preview).toHaveBeenCalledWith('https://github.com/org/repo');
   });
 
   it('returns 409 when duplicate server is submitted', async () => {
@@ -124,6 +170,7 @@ describe('servers routes', () => {
 
     const service = {
       create: vi.fn().mockRejectedValue(new AppError('This server is already registered.', 409, 'duplicate_server')),
+      preview: vi.fn(),
       getBySlug: vi.fn(),
       list: vi.fn(),
     };
@@ -155,6 +202,7 @@ describe('servers routes', () => {
   it('returns server detail for GET by slug', async () => {
     const service = {
       create: vi.fn(),
+      preview: vi.fn(),
       getBySlug: vi.fn().mockResolvedValue({ slug: 'repo', categories: ['utilities'], tags: ['cli'] }),
       list: vi.fn(),
     };
@@ -185,6 +233,7 @@ describe('servers routes', () => {
     it('passes q param to service list', async () => {
       const service = {
         create: vi.fn(),
+        preview: vi.fn(),
         getBySlug: vi.fn(),
         list: vi.fn().mockResolvedValue(makeListResult()),
       };
@@ -202,6 +251,7 @@ describe('servers routes', () => {
     it('passes category param to service list', async () => {
       const service = {
         create: vi.fn(),
+        preview: vi.fn(),
         getBySlug: vi.fn(),
         list: vi.fn().mockResolvedValue(makeListResult()),
       };
@@ -219,6 +269,7 @@ describe('servers routes', () => {
     it('passes tags array to service list', async () => {
       const service = {
         create: vi.fn(),
+        preview: vi.fn(),
         getBySlug: vi.fn(),
         list: vi.fn().mockResolvedValue(makeListResult()),
       };
@@ -238,6 +289,7 @@ describe('servers routes', () => {
     it('passes sort param to service list', async () => {
       const service = {
         create: vi.fn(),
+        preview: vi.fn(),
         getBySlug: vi.fn(),
         list: vi.fn().mockResolvedValue(makeListResult()),
       };
@@ -255,6 +307,7 @@ describe('servers routes', () => {
     it('returns 422 for invalid sort value', async () => {
       const service = {
         create: vi.fn(),
+        preview: vi.fn(),
         getBySlug: vi.fn(),
         list: vi.fn().mockResolvedValue(makeListResult()),
       };
@@ -272,6 +325,7 @@ describe('servers routes', () => {
     it('returns correct meta in pagination response', async () => {
       const service = {
         create: vi.fn(),
+        preview: vi.fn(),
         getBySlug: vi.fn(),
         list: vi.fn().mockResolvedValue({
           items: [],
@@ -297,6 +351,7 @@ describe('servers routes', () => {
     it('passes all search filters combined', async () => {
       const service = {
         create: vi.fn(),
+        preview: vi.fn(),
         getBySlug: vi.fn(),
         list: vi.fn().mockResolvedValue(makeListResult()),
       };

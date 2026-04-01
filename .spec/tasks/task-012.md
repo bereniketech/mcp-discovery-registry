@@ -1,7 +1,7 @@
 ---
 task: 012
 feature: mcp-discovery-registry
-status: pending
+status: done
 depends_on: [004, 011]
 ---
 
@@ -60,19 +60,36 @@ _Skills: /build-website-web-app — form UI, validation states; /code-writing-so
 ---
 
 ## Acceptance Criteria
-- [ ] Valid GitHub URL shows metadata preview after submission
-- [ ] User can select categories before confirming
-- [ ] Successful submission redirects to new server profile page
-- [ ] Duplicate URL shows "This server is already registered" error
-- [ ] Invalid URL shows validation error
-- [ ] Loading state shown while metadata is being fetched
-- [ ] Unauthenticated users redirected to sign-in
-- [ ] `/verify` passes
+- [x] Valid GitHub URL shows metadata preview after submission
+- [x] User can select categories before confirming
+- [x] Successful submission redirects to new server profile page
+- [x] Duplicate URL shows "This server is already registered" error
+- [x] Invalid URL shows validation error
+- [x] Loading state shown while metadata is being fetched
+- [x] Unauthenticated users redirected to sign-in
+- [x] `/verify` passes
 
 ---
 
 ## Handoff to Next Task
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `client/src/pages/SubmitPage.tsx` — implemented two-step submit flow (preview -> category select -> confirm), URL validation, auth gate, and error mapping for invalid URL / duplicate / GitHub unavailable.
+- `client/src/pages/SubmitPage.test.tsx` — added component tests for invalid input, loading preview, preview rendering, duplicate error, and unauthenticated sign-in redirect.
+- `client/src/lib/api.ts` — added `previewServer()` API call and extended `createServer()` to send selected category slugs.
+- `server/src/schemas/server.ts` — extended create schema with optional `categories` and added preview request schema.
+- `server/src/routes/servers.ts` — added `POST /api/v1/servers/preview` and wired `categories` through create endpoint.
+- `server/src/services/server.ts` — added preview metadata method with duplicate detection and category attachment during create.
+- `server/src/routes/servers.test.ts` — added preview route test and updated create route expectations for category payload.
+
+**Decisions made:**
+- Kept backend-owned GitHub fetch behavior by introducing a dedicated authenticated preview endpoint (`POST /servers/preview`) instead of client-side GitHub fetches.
+- Preserved existing create endpoint and made category assignment optional via `categories: string[]` in the same request.
+- Category validation is strict on create: unknown category slugs return `422 invalid_categories`.
+- Duplicate detection runs in both preview and create to keep UX fast while still handling race conditions safely.
+
+**Context for next task:**
+- Submit flow is now: URL input -> preview fetch -> category selection -> confirm create -> navigate to `/servers/:slug`.
+- Frontend error copy is user-facing and normalized from API error codes in `mapSubmissionError`.
+- Full repo verification (`npm run typecheck`, `npm run lint`, `npm run test`) passes.
+
+**Open questions:** _(none)_

@@ -22,6 +22,16 @@ export interface Server {
   toolSchemas?: ToolSchema[];
 }
 
+export interface ServerPreview {
+  name: string;
+  description: string;
+  githubUrl: string;
+  githubStars: number;
+  githubForks: number;
+  openIssues: number;
+  lastCommitAt?: string | null;
+}
+
 export interface ToolSchema {
   name: string;
   description?: string;
@@ -125,11 +135,21 @@ export class ApiClient {
     return response.data;
   }
 
-  async createServer(githubUrl: string, accessToken: string): Promise<Server> {
-    const response = await this.request<ApiEnvelope<Server>>('/servers', {
+  async previewServer(githubUrl: string, accessToken: string): Promise<ServerPreview> {
+    const response = await this.request<ApiEnvelope<ServerPreview>>('/servers/preview', {
       method: 'POST',
       token: accessToken,
       body: { github_url: githubUrl },
+    });
+
+    return response.data;
+  }
+
+  async createServer(githubUrl: string, accessToken: string, categories: string[] = []): Promise<Server> {
+    const response = await this.request<ApiEnvelope<Server>>('/servers', {
+      method: 'POST',
+      token: accessToken,
+      body: { github_url: githubUrl, categories },
     });
 
     return response.data;

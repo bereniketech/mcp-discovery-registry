@@ -15,6 +15,7 @@ import type { SearchParams } from './search.js';
 interface CreateServerParams {
   githubUrl: string;
   userId: string;
+  categorySlugs?: string[];
 }
 
 type ListServerParams = SearchParams;
@@ -36,6 +37,16 @@ export interface ServerResponse extends ServerRow {
   tags: string[];
 }
 
+export interface ServerPreview {
+  name: string;
+  description: string;
+  githubUrl: string;
+  githubStars: number;
+  githubForks: number;
+  openIssues: number;
+  lastCommitAt: Date | null;
+}
+
 export class ServerService {
   private readonly searchService: SearchService;
 
@@ -47,7 +58,7 @@ export class ServerService {
     this.searchService = searchService ?? new SearchService(database);
   }
 
-  async create({ githubUrl, userId }: CreateServerParams): Promise<ServerResponse> {
+  async create({ githubUrl, userId, categorySlugs = [] }: CreateServerParams): Promise<ServerResponse> {
     const metadata = await this.githubFetcher.fetchRepositoryMetadata(githubUrl);
 
     const existingRows = await this.database
@@ -62,6 +73,11 @@ export class ServerService {
       throw new AppError('This server is already registered.', 409, 'duplicate_server');
     }
 
+    const normalizedCategorySlugs = Array.from(
+      new Set(categorySlugs.map((slug) => slug.trim().toLowerCase())),
+    ).filter(Boolean);
+    const categoryIds = await this.resolveCategoryIds(normalizedCategorySlugs);
+
     const slug = await this.generateUniqueSlug(metadata.name);
 
     try {
@@ -74,9 +90,18 @@ export class ServerService {
         throw new AppError('Failed to create server', 500, 'server_create_failed');
       }
 
+      if (categoryIds.length > 0) {
+        await this.database.insert(serverCategories).values(
+          categoryIds.map((categoryId) => ({
+            serverId: created.id,
+            categoryId,
+          })),
+        );
+      }
+
       return {
         ...created,
-        categories: [],
+        categories: normalizedCategorySlugs,
         tags: [],
       };
     } catch (error) {
@@ -86,6 +111,30 @@ export class ServerService {
 
       throw error;
     }
+  }
+
+  async preview(githubUrl: string): Promise<ServerPreview> {
+    const metadata = await this.githubFetcher.fetchRepositoryMetadata(githubUrl);
+
+    const existingRows = await this.database
+      .select({ id: servers.id })
+      .from(servers)
+      .where(eq(servers.githubUrl, metadata.githubUrl))
+      .limit(1);
+
+    if (existingRows[0]) {
+      throw new AppError('This server is already registered.', 409, 'duplicate_server');
+    }
+
+    return {
+      name: metadata.name,
+      description: metadata.description,
+      githubUrl: metadata.githubUrl,
+      githubStars: metadata.githubStars,
+      githubForks: metadata.githubForks,
+      openIssues: metadata.openIssues,
+      lastCommitAt: metadata.lastCommitAt,
+    };
   }
 
   async getBySlug(slug: string): Promise<ServerResponse> {
@@ -180,6 +229,26 @@ export class ServerService {
       openIssues: metadata.openIssues,
       lastCommitAt: metadata.lastCommitAt,
     };
+  }
+
+  private async resolveCategoryIds(categorySlugs: string[]): Promise<string[]> {
+    if (categorySlugs.length === 0) {
+      return [];
+    }
+
+    const categoryRows = await this.database
+      .select({ id: categories.id, slug: categories.slug })
+      .from(categories)
+      .where(inArray(categories.slug, categorySlugs));
+
+    const slugToId = new Map(categoryRows.map((row) => [row.slug, row.id]));
+    const missing = categorySlugs.filter((slug) => !slugToId.has(slug));
+
+    if (missing.length > 0) {
+      throw new AppError('One or more categories are invalid.', 422, 'invalid_categories');
+    }
+
+    return categorySlugs.map((slug) => slugToId.get(slug) as string);
   }
 
   private async getCategorySlugs(serverId: string): Promise<string[]> {

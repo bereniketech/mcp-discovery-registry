@@ -1,7 +1,7 @@
 ---
 task: 011
 feature: mcp-discovery-registry
-status: pending
+status: done
 depends_on: [006, 008]
 ---
 
@@ -60,19 +60,41 @@ _Skills: /build-website-web-app — auth UI, protected routes; /code-writing-sof
 ---
 
 ## Acceptance Criteria
-- [ ] GitHub OAuth sign-in flow works end-to-end (click sign in -> GitHub -> redirect back -> signed in)
-- [ ] Sign-out clears session and updates UI
-- [ ] User profile page shows avatar, username from GitHub
-- [ ] Favorites list fetches and displays correctly
-- [ ] Submissions list fetches and displays correctly
-- [ ] Unauthenticated users redirected to sign-in when attempting write actions
-- [ ] Auth state persists across page refreshes (Supabase session)
-- [ ] `/verify` passes
+- [x] GitHub OAuth sign-in flow works end-to-end (click sign in -> GitHub -> redirect back -> signed in)
+- [x] Sign-out clears session and updates UI
+- [x] User profile page shows avatar, username from GitHub
+- [x] Favorites list fetches and displays correctly
+- [x] Submissions list fetches and displays correctly
+- [x] Unauthenticated users redirected to sign-in when attempting write actions
+- [x] Auth state persists across page refreshes (Supabase session)
+- [x] `/verify` passes
 
 ---
 
 ## Handoff to Next Task
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `client/src/contexts/AuthContext.tsx` — `AuthProvider` component; subscribes to Supabase auth state changes and provides session/user/signInWithGitHub/signOut to tree
+- `client/src/contexts/auth-context.ts` — `AuthContext`, `AuthContextValue`, `AuthUser`, `AuthSession` types, and `useAuthContext` hook (split out to avoid react-refresh lint violation)
+- `client/src/hooks/useAuth.ts` — `useAuth` convenience hook (delegates to `useAuthContext`)
+- `client/src/components/AuthButton.tsx` — sign-in, loading skeleton, signed-in (avatar + profile link + sign-out) states
+- `client/src/components/AuthButton.test.tsx` — 2 component tests (signed-out / signed-in states)
+- `client/src/components/layout/Header.tsx` — replaced static "Sign in" button with `<AuthButton>`
+- `client/src/pages/AuthCallbackPage.tsx` — exchanges OAuth code for Supabase session, redirects to /profile
+- `client/src/pages/Profile.tsx` — real profile page: avatar, username, email, favorites list, submissions list; shows sign-in prompt when unauthenticated
+- `client/src/pages/SubmitPage.tsx` — functional submit form with URL validation and auth guard (triggers GitHub OAuth if not signed in)
+- `client/src/pages/ServerDetail.tsx` — write actions (vote/favorite/tag) replaced local `getAccessToken` helper with `useAuth` hook; redirect to OAuth when token absent
+- `client/src/App.tsx` — added `/auth/callback` route (outside Layout) and switched `/profile` to use `<Profile>`
+- `client/src/main.tsx` — wrapped `<App>` in `<AuthProvider>`
+- `client/src/index.css` — added `.auth-button-group`, `.auth-profile-link`, `.auth-avatar`, `.auth-button-secondary`, `.profile-summary`, `.profile-avatar`, `.profile-list` tokens
+
+**Decisions made:**
+- Typed session/user with local minimal interfaces (`AuthUser`, `AuthSession`) to avoid re-exporting Supabase library types; cast from Supabase SDK using `as`.
+- `AuthContext` internal hooks extracted to `auth-context.ts` (plain TS) to satisfy `react-refresh/only-export-components` lint rule.
+- Write actions in ServerDetail redirect to OAuth rather than showing an inline error; `handleTagAdd` re-throws after redirect so caller sees a "redirecting" error rather than silently succeeding.
+
+**Context for next task:**
+- All auth state is available via `useAuth()` from any component in the tree.
+- `session.access_token` is the JWT to pass to API client calls for authenticated endpoints.
+- The OAuth callback URL that must be added to the GitHub OAuth app and Supabase settings is: `<origin>/auth/callback`.
+
+**Open questions:** _(none)_

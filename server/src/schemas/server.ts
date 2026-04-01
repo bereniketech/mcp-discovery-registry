@@ -9,6 +9,15 @@ export const createServerSchema = z.object({
     .trim()
     .url('github_url must be a valid URL')
     .regex(githubUrlPattern, 'github_url must be a GitHub repository URL'),
+  categories: z.array(z.string().trim().min(1)).max(10).optional().default([]),
+});
+
+export const previewServerSchema = z.object({
+  github_url: z
+    .string()
+    .trim()
+    .url('github_url must be a valid URL')
+    .regex(githubUrlPattern, 'github_url must be a GitHub repository URL'),
 });
 
 export const listServersQuerySchema = z.object({
