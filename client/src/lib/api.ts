@@ -39,6 +39,13 @@ interface ErrorEnvelope {
   };
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+}
+
 export interface ServerListQuery {
   q?: string;
   category?: string;
@@ -175,6 +182,40 @@ export class ApiClient {
     const response = await this.request<ApiEnvelope<Server[]>>(`/trending${suffix}`);
 
     return response.data;
+  }
+
+  async getCategories(): Promise<Category[]> {
+    try {
+      const response = await this.request<ApiEnvelope<Category[]>>('/categories');
+      return response.data;
+    } catch {
+      // Fallback for deployments where categories endpoint is not available yet.
+      const servers = await this.listServers({ perPage: 100, sort: 'trending' });
+      const seen = new Set<string>();
+
+      return servers.items
+        .flatMap((server) => server.categories)
+        .filter((name) => {
+          const slug = name.toLowerCase().trim();
+          if (!slug || seen.has(slug)) return false;
+          seen.add(slug);
+          return true;
+        })
+        .map((name) => {
+          const slug = name
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+
+          return {
+            id: slug,
+            name,
+            slug,
+            description: `${name} servers`,
+          };
+        });
+    }
   }
 
   private getBaseUrl(): string {

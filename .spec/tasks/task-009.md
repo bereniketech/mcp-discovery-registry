@@ -1,7 +1,7 @@
 ---
 task: 009
 feature: mcp-discovery-registry
-status: pending
+status: completed
 depends_on: [005, 008]
 ---
 
@@ -61,19 +61,19 @@ _Skills: /build-website-web-app — components, responsive layout; /code-writing
 ---
 
 ## Acceptance Criteria
-- [ ] Search returns results as user types (debounced)
-- [ ] Category sidebar filters results when clicked
-- [ ] Tag filter narrows results
-- [ ] Trending section shows top servers from API
-- [ ] ServerCard displays all required fields
-- [ ] "No results" message shows with suggested categories
-- [ ] Layout works on mobile (375px) and desktop (1920px+)
-- [ ] `/verify` passes
+- [x] Search returns results as user types (debounced)
+- [x] Category sidebar filters results when clicked
+- [x] Tag filter narrows results
+- [x] Trending section shows top servers from API
+- [x] ServerCard displays all required fields
+- [x] "No results" message shows with suggested categories
+- [x] Layout works on mobile (375px) and desktop (1920px+)
+- [x] `/verify` passes
 
 ---
 
 ## Handoff to Next Task
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:** client/src/lib/api.ts, client/src/hooks/useSearch.ts, client/src/hooks/useTrending.ts, client/src/components/SearchBar.tsx, client/src/components/ServerCard.tsx, client/src/components/TrendingSection.tsx, client/src/components/layout/Sidebar.tsx, client/src/pages/HomePage.tsx, client/src/index.css, bug-log.md, .spec/tasks/task-009.md
+**Decisions made:** Implemented home search as a debounced (300ms) hook-backed flow against `GET /api/v1/servers`; used URL query param `category` on `/` so sidebar category clicks filter home results without route churn; loaded trending via `GET /api/v1/trending?limit=10`; added API category method with graceful fallback to derive categories from server listings when `/api/v1/categories` is unavailable.
+**Context for next task:** Home now renders a real discovery experience with search, tag/category filters, trending strip, result cards, no-results suggestions, and responsive behavior; sidebar category links are dynamic and API-backed with fallback resilience.
+**Open questions:** Task step references `GET /api/v1/categories`, but current backend routes expose no categories endpoint; client currently supports this via fallback derivation from `listServers` until backend endpoint is added.

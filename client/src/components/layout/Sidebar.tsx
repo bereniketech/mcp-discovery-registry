@@ -1,17 +1,40 @@
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { apiClient, type Category } from '../../lib/api.js';
 
 interface SidebarProps {
   onNavigate: () => void;
 }
 
-const categoryLinks = [
-  { label: 'Automation', path: '/category/automation' },
-  { label: 'Developer Tools', path: '/category/developer-tools' },
-  { label: 'AI Agents', path: '/category/ai-agents' },
-  { label: 'Data', path: '/category/data' },
-];
-
 export function Sidebar({ onNavigate }: SidebarProps) {
+  const location = useLocation();
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCategories() {
+      try {
+        const data = await apiClient.getCategories();
+        if (!cancelled) {
+          setCategories(data);
+        }
+      } catch {
+        if (!cancelled) {
+          setCategories([]);
+        }
+      }
+    }
+
+    void loadCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const activeCategory = new URLSearchParams(location.search).get('category') ?? '';
+
   return (
     <aside className="shell-sidebar" aria-label="Primary navigation">
       <nav className="sidebar-section" aria-label="Main routes">
@@ -28,11 +51,28 @@ export function Sidebar({ onNavigate }: SidebarProps) {
 
       <nav className="sidebar-section" aria-label="Categories">
         <p className="sidebar-title">Categories</p>
-        {categoryLinks.map((item) => (
-          <NavLink className="sidebar-link" key={item.path} onClick={onNavigate} to={item.path}>
-            {item.label}
-          </NavLink>
-        ))}
+        <Link
+          className={`sidebar-link${activeCategory ? '' : ' active'}`}
+          onClick={onNavigate}
+          to="/"
+        >
+          All categories
+        </Link>
+        {categories.map((item) => {
+          const isActive = activeCategory === item.slug;
+          const href = `/?category=${encodeURIComponent(item.slug)}`;
+
+          return (
+            <Link
+              className={`sidebar-link${isActive ? ' active' : ''}`}
+              key={item.id}
+              onClick={onNavigate}
+              to={href}
+            >
+              {item.name}
+            </Link>
+          );
+        })}
       </nav>
     </aside>
   );
