@@ -214,6 +214,12 @@ body {
   gap: 1.2rem;
 }
 
+.server-detail-page {
+  display: grid;
+  gap: 1.2rem;
+  width: min(100%, 70rem);
+}
+
 .search-panel {
   display: grid;
   gap: 0.9rem;
@@ -293,6 +299,124 @@ body {
   border-radius: 1rem;
   background: hsl(var(--surface) / 0.84);
   box-shadow: 0 20px 38px -32px hsl(var(--shadow-color) / 0.33);
+}
+
+.detail-section {
+  width: min(100%, 70rem);
+  padding: clamp(1rem, 2.2vw, 1.4rem);
+  border: 1px solid hsl(var(--foreground) / 0.08);
+  border-radius: 1rem;
+  background: hsl(var(--surface) / 0.84);
+  box-shadow: 0 20px 38px -32px hsl(var(--shadow-color) / 0.33);
+}
+
+.detail-section-header h2 {
+  margin: 0;
+  font-size: clamp(1.1rem, 2.6vw, 1.5rem);
+}
+
+.stale-warning {
+  margin-top: 1rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid hsl(var(--primary) / 0.45);
+  border-radius: 0.75rem;
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+.readme-content {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.readme-content :is(h1, h2, h3) {
+  margin: 0.75rem 0 0.25rem;
+}
+
+.readme-content p,
+.readme-content ul,
+.readme-content ol {
+  margin: 0.35rem 0;
+  line-height: 1.55;
+}
+
+.readme-content pre {
+  margin: 0.45rem 0;
+  padding: 0.85rem;
+  border-radius: 0.7rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--foreground) / 0.06);
+  overflow-x: auto;
+}
+
+.readme-content code {
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.schema-list {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.schema-item {
+  padding: 0.8rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.8rem;
+  background: hsl(var(--surface));
+}
+
+.schema-item summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.schema-subtitle {
+  margin: 0.65rem 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.schema-code,
+.config-preview {
+  margin: 0;
+  padding: 0.8rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.7rem;
+  background: hsl(var(--foreground) / 0.05);
+  overflow-x: auto;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.config-preview {
+  margin-top: 0.8rem;
+}
+
+.config-target-label {
+  display: block;
+  margin-top: 0.75rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+.tag-input-form {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.tag-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: center;
 }
 
 .trending-header,

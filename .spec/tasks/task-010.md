@@ -1,7 +1,7 @@
 ---
 task: 010
 feature: mcp-discovery-registry
-status: pending
+status: completed
 depends_on: [004, 006, 008]
 ---
 
@@ -62,20 +62,20 @@ _Skills: /build-website-web-app — detail page, Markdown rendering; /code-writi
 ---
 
 ## Acceptance Criteria
-- [ ] README renders with proper Markdown formatting and syntax-highlighted code blocks
-- [ ] All Markdown is sanitized (no XSS via README content)
-- [ ] Tool schemas displayed with expandable details
-- [ ] GitHub stats (stars, forks, issues, last commit) shown
-- [ ] "Potentially unmaintained" warning appears for repos stale >90 days
-- [ ] Config generator copies valid mcpServers JSON for Claude Desktop and Cursor
-- [ ] Vote/favorite buttons toggle with optimistic UI
-- [ ] Tags addable via autocomplete input
-- [ ] `/verify` passes
+- [x] README renders with proper Markdown formatting and syntax-highlighted code blocks
+- [x] All Markdown is sanitized (no XSS via README content)
+- [x] Tool schemas displayed with expandable details
+- [x] GitHub stats (stars, forks, issues, last commit) shown
+- [x] "Potentially unmaintained" warning appears for repos stale >90 days
+- [x] Config generator copies valid mcpServers JSON for Claude Desktop and Cursor
+- [x] Vote/favorite buttons toggle with optimistic UI
+- [x] Tags addable via autocomplete input
+- [x] `/verify` passes
 
 ---
 
 ## Handoff to Next Task
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:** client/src/pages/ServerDetail.tsx, client/src/components/ConfigGenerator.tsx, client/src/components/TagInput.tsx, client/src/App.tsx, client/src/lib/api.ts, client/src/index.css, client/package.json, package-lock.json, .spec/tasks/task-010.md
+**Decisions made:** Implemented a full detail route component at `/servers/:slug` with optimistic vote/favorite actions, README rendering via `react-markdown` + `remark-gfm` + `rehype-highlight`, and sanitization through `dompurify`; built a config generator that outputs `mcpServers` JSON for Claude Desktop and Cursor and copies via Clipboard API; added tool-schema accordion rendering from API payload when available and README JSON code-block fallback parsing when not.
+**Context for next task:** Detail page now loads server metadata by slug, shows stale-maintenance warning when `lastCommitAt` is older than 90 days, supports tag addition with autocomplete suggestions and slug-format enforcement, and includes GitHub stats + taxonomy chips in a responsive layout.
+**Open questions:** Backend currently does not expose persisted tool schema fields on server records; UI supports API-provided schemas when present and falls back to extracting likely schemas from README JSON blocks.

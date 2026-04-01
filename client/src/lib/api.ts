@@ -19,6 +19,14 @@ export interface Server {
   lastCommitAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  toolSchemas?: ToolSchema[];
+}
+
+export interface ToolSchema {
+  name: string;
+  description?: string;
+  inputSchema?: unknown;
+  outputSchema?: unknown;
 }
 
 interface ApiEnvelope<TData> {

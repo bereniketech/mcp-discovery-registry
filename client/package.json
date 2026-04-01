@@ -10,11 +10,15 @@
     "test": "node ../node_modules/vitest/vitest.mjs run --passWithNoTests"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.8",
     "@mcp-registry/shared": "file:../shared",
+    "@supabase/supabase-js": "^2.49.8",
+    "dompurify": "^3.3.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.27.0"
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^6.27.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.8",
