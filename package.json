@@ -15,7 +15,9 @@
     "test:server": "npm run test --workspace @mcp-registry/server",
     "test:client": "npm run test --workspace @mcp-registry/client",
     "test:e2e": "node ./node_modules/@playwright/test/cli.js test",
-    "test:coverage": "npm run test --workspace @mcp-registry/server -- --coverage && npm run test --workspace @mcp-registry/client -- --coverage",
+    "test:coverage": "npm run test:server:coverage && npm run test:client:coverage",
+    "test:server:coverage": "npm run test --workspace @mcp-registry/server -- --coverage",
+    "test:client:coverage": "npm run test --workspace @mcp-registry/client -- --coverage",
     "format": "node ./node_modules/prettier/bin/prettier.cjs --check ."
   },
   "devDependencies": {
