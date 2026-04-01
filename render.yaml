@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: mcp-discovery-registry-api
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install; npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 3000
+      - key: CORS_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false

@@ -5,11 +5,13 @@ import remarkGfm from 'remark-gfm';
 import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { ConfigGenerator } from '../components/ConfigGenerator.js';
+import { Seo } from '../components/Seo.js';
 import { TagInput } from '../components/TagInput.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { apiClient, type Server, type ToolSchema } from '../lib/api.js';
 
 const STALE_DAYS_THRESHOLD = 90;
+const DEFAULT_SERVER_OG_IMAGE = 'https://avatars.githubusercontent.com/u/9919?s=400&v=4';
 
 function parseToolSchemasFromReadme(readmeContent: string | null | undefined): ToolSchema[] {
   if (!readmeContent) {
@@ -130,8 +132,25 @@ function formatDate(dateValue: string | null | undefined): string {
   return parsed.toLocaleDateString();
 }
 
+function getServerOgImage(server: Server): string {
+  try {
+    const parsedUrl = new URL(server.githubUrl);
+    const segments = parsedUrl.pathname.split('/').filter(Boolean);
+    if (segments.length >= 2) {
+      const owner = segments[0];
+      const repo = segments[1];
+      return `https://opengraph.githubassets.com/1/${owner}/${repo}`;
+    }
+  } catch {
+    // Ignore malformed repository URLs and use default image.
+  }
+
+  return DEFAULT_SERVER_OG_IMAGE;
+}
+
 export function ServerDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const detailPath = slug ? `/servers/${slug}` : null;
   const { session, signInWithGitHub } = useAuth();
   const [server, setServer] = useState<Server | null>(null);
   const [loading, setLoading] = useState(true);
@@ -326,119 +345,146 @@ export function ServerDetail() {
 
   if (loading) {
     return (
-      <section className="page-card">
-        <p className="status-text">Loading server detail...</p>
-      </section>
+      <>
+        <Seo
+          title="Loading Server | MCP Discovery Registry"
+          description="Loading server details and metadata."
+          {...(detailPath ? { path: detailPath } : {})}
+        />
+        <section className="page-card">
+          <p className="status-text">Loading server detail...</p>
+        </section>
+      </>
     );
   }
 
   if (error || !server) {
     return (
-      <section className="page-card">
-        <p className="page-kicker">Server Detail</p>
-        <h1 className="page-title">Unable to load server</h1>
-        <p className="page-copy">{error ?? 'The requested server was not found.'}</p>
-      </section>
+      <>
+        <Seo
+          title="Server Not Found | MCP Discovery Registry"
+          description={error ?? 'The requested server was not found.'}
+          {...(detailPath ? { path: detailPath } : {})}
+        />
+        <section className="page-card">
+          <p className="page-kicker">Server Detail</p>
+          <h1 className="page-title">Unable to load server</h1>
+          <p className="page-copy">{error ?? 'The requested server was not found.'}</p>
+        </section>
+      </>
     );
   }
 
+  const metaTitle = `${server.name} | MCP Server Registry`;
+  const metaDescription = server.description || `Explore ${server.name} on MCP Discovery Registry.`;
+  const ogImage = getServerOgImage(server);
+
   return (
-    <article className="server-detail-page">
-      <section className="page-card">
-        <p className="page-kicker">Server Detail</p>
-        <h1 className="page-title">{server.name}</h1>
-        <p className="page-copy">{server.description || 'No description available yet.'}</p>
+    <>
+      <Seo
+        title={metaTitle}
+        description={metaDescription}
+        image={ogImage}
+        path={`/servers/${server.slug}`}
+        type="article"
+      />
+      <article className="server-detail-page">
+        <section className="page-card">
+          <p className="page-kicker">Server Detail</p>
+          <h1 className="page-title">{server.name}</h1>
+          <p className="page-copy">{server.description || 'No description available yet.'}</p>
 
-        <div className="server-metrics" aria-label="Repository metrics">
-          <span>Stars: {server.githubStars.toLocaleString()}</span>
-          <span>Forks: {server.githubForks.toLocaleString()}</span>
-          <span>Open issues: {server.openIssues.toLocaleString()}</span>
-          <span>Last commit: {formatDate(server.lastCommitAt)}</span>
-        </div>
-
-        {staleRepository ? (
-          <div className="stale-warning" role="status">
-            Potentially unmaintained: this repository has not been updated in over {STALE_DAYS_THRESHOLD}{' '}
-            days.
+          <div className="server-metrics" aria-label="Repository metrics">
+            <span>Stars: {server.githubStars.toLocaleString()}</span>
+            <span>Forks: {server.githubForks.toLocaleString()}</span>
+            <span>Open issues: {server.openIssues.toLocaleString()}</span>
+            <span>Last commit: {formatDate(server.lastCommitAt)}</span>
           </div>
-        ) : null}
 
-        <div className="server-taxonomy" aria-label="Server taxonomy">
-          {server.categories.map((category) => (
-            <span key={category} className="category-badge">
-              {category}
-            </span>
-          ))}
-          {server.tags.map((tag) => (
-            <span key={tag} className="tag-badge">
-              #{tag}
-            </span>
-          ))}
-        </div>
+          {staleRepository ? (
+            <div className="stale-warning" role="status">
+              Potentially unmaintained: this repository has not been updated in over {STALE_DAYS_THRESHOLD}{' '}
+              days.
+            </div>
+          ) : null}
 
-        <div className="page-actions">
-          <button type="button" className="action-button" onClick={handleVoteToggle}>
-            {isVoted ? 'Undo vote' : 'Vote'} ({voteCount.toLocaleString()})
-          </button>
-          <button type="button" className="action-button" onClick={handleFavoriteToggle}>
-            {isFavorited ? 'Unfavorite' : 'Favorite'} ({favoritesCount.toLocaleString()})
-          </button>
-          <a
-            className="action-button primary"
-            href={server.githubUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            View on GitHub
-          </a>
-        </div>
-
-        {actionError ? <p className="status-text">{actionError}</p> : null}
-      </section>
-
-      <section className="detail-section" aria-label="README">
-        <div className="detail-section-header">
-          <h2>README</h2>
-        </div>
-        {sanitizedReadme ? (
-          <div className="readme-content">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-              {sanitizedReadme}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <p className="status-text">No README content available.</p>
-        )}
-      </section>
-
-      <section className="detail-section" aria-label="Tool schemas">
-        <div className="detail-section-header">
-          <h2>Tool Schemas</h2>
-        </div>
-        {toolSchemas.length === 0 ? (
-          <p className="status-text">No tool schemas were detected for this server.</p>
-        ) : (
-          <div className="schema-list">
-            {toolSchemas.map((schema) => (
-              <details className="schema-item" key={schema.name}>
-                <summary>{schema.name}</summary>
-                {schema.description ? <p className="status-text">{schema.description}</p> : null}
-                <h3 className="schema-subtitle">Input schema</h3>
-                <pre className="schema-code">
-                  {JSON.stringify(schema.inputSchema ?? { type: 'object' }, null, 2)}
-                </pre>
-                <h3 className="schema-subtitle">Output schema</h3>
-                <pre className="schema-code">
-                  {JSON.stringify(schema.outputSchema ?? { type: 'object' }, null, 2)}
-                </pre>
-              </details>
+          <div className="server-taxonomy" aria-label="Server taxonomy">
+            {server.categories.map((category) => (
+              <span key={category} className="category-badge">
+                {category}
+              </span>
+            ))}
+            {server.tags.map((tag) => (
+              <span key={tag} className="tag-badge">
+                #{tag}
+              </span>
             ))}
           </div>
-        )}
-      </section>
 
-      <ConfigGenerator server={server} />
-      <TagInput currentTags={server.tags} suggestions={knownTags} onAddTag={handleTagAdd} />
-    </article>
+          <div className="page-actions">
+            <button type="button" className="action-button" onClick={handleVoteToggle}>
+              {isVoted ? 'Undo vote' : 'Vote'} ({voteCount.toLocaleString()})
+            </button>
+            <button type="button" className="action-button" onClick={handleFavoriteToggle}>
+              {isFavorited ? 'Unfavorite' : 'Favorite'} ({favoritesCount.toLocaleString()})
+            </button>
+            <a
+              className="action-button primary"
+              href={server.githubUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View on GitHub
+            </a>
+          </div>
+
+          {actionError ? <p className="status-text">{actionError}</p> : null}
+        </section>
+
+        <section className="detail-section" aria-label="README">
+          <div className="detail-section-header">
+            <h2>README</h2>
+          </div>
+          {sanitizedReadme ? (
+            <div className="readme-content">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                {sanitizedReadme}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <p className="status-text">No README content available.</p>
+          )}
+        </section>
+
+        <section className="detail-section" aria-label="Tool schemas">
+          <div className="detail-section-header">
+            <h2>Tool Schemas</h2>
+          </div>
+          {toolSchemas.length === 0 ? (
+            <p className="status-text">No tool schemas were detected for this server.</p>
+          ) : (
+            <div className="schema-list">
+              {toolSchemas.map((schema) => (
+                <details className="schema-item" key={schema.name}>
+                  <summary>{schema.name}</summary>
+                  {schema.description ? <p className="status-text">{schema.description}</p> : null}
+                  <h3 className="schema-subtitle">Input schema</h3>
+                  <pre className="schema-code">
+                    {JSON.stringify(schema.inputSchema ?? { type: 'object' }, null, 2)}
+                  </pre>
+                  <h3 className="schema-subtitle">Output schema</h3>
+                  <pre className="schema-code">
+                    {JSON.stringify(schema.outputSchema ?? { type: 'object' }, null, 2)}
+                  </pre>
+                </details>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <ConfigGenerator server={server} />
+        <TagInput currentTags={server.tags} suggestions={knownTags} onAddTag={handleTagAdd} />
+      </article>
+    </>
   );
 }

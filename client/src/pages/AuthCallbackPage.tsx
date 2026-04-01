@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Seo } from '../components/Seo.js';
 import { supabase } from '../lib/supabase.js';
 
 export function AuthCallbackPage() {
@@ -44,10 +45,18 @@ export function AuthCallbackPage() {
   }, [navigate]);
 
   return (
-    <section className="page-card">
-      <p className="page-kicker">Authentication</p>
-      <h1 className="page-title">Completing OAuth callback</h1>
-      <p className="page-copy">{message}</p>
-    </section>
+    <>
+      <Seo
+        title="OAuth Callback | MCP Discovery Registry"
+        description="Finalizing your authentication session."
+        path="/auth/callback"
+        noIndex
+      />
+      <section className="page-card">
+        <p className="page-kicker">Authentication</p>
+        <h1 className="page-title">Completing OAuth callback</h1>
+        <p className="page-copy">{message}</p>
+      </section>
+    </>
   );
 }

@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Seo } from '../components/Seo.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { apiClient, type Category, type ServerPreview } from '../lib/api.js';
 
@@ -130,82 +131,89 @@ export function SubmitPage() {
   }
 
   return (
-    <section className="page-card">
-      <p className="page-kicker">Submit</p>
-      <h1 className="page-title">Add a new server</h1>
-      <p className="page-copy">
-        Paste a GitHub repository URL and we will import metadata, README content, and tags.
-      </p>
+    <>
+      <Seo
+        title="Submit MCP Server | MCP Discovery Registry"
+        description="Submit a GitHub repository to add a new MCP server to the registry."
+        path="/submit"
+      />
+      <section className="page-card">
+        <p className="page-kicker">Submit</p>
+        <h1 className="page-title">Add a new server</h1>
+        <p className="page-copy">
+          Paste a GitHub repository URL and we will import metadata, README content, and tags.
+        </p>
 
-      <form className="search-panel" onSubmit={handlePreviewSubmit}>
-        <label className="search-panel-field" htmlFor="submit-github-url">
-          <span className="search-panel-label">GitHub URL</span>
-          <input
-            id="submit-github-url"
-            className="search-panel-input"
-            placeholder="https://github.com/org/repo"
-            type="url"
-            value={githubUrl}
-            onChange={(event) => {
-              setGithubUrl(event.target.value);
-              setPreview(null);
-            }}
-            disabled={loadingPreview || confirming || authLoading}
-          />
-        </label>
+        <form className="search-panel" onSubmit={handlePreviewSubmit}>
+          <label className="search-panel-field" htmlFor="submit-github-url">
+            <span className="search-panel-label">GitHub URL</span>
+            <input
+              id="submit-github-url"
+              className="search-panel-input"
+              placeholder="https://github.com/org/repo"
+              type="url"
+              value={githubUrl}
+              onChange={(event) => {
+                setGithubUrl(event.target.value);
+                setPreview(null);
+              }}
+              disabled={loadingPreview || confirming || authLoading}
+            />
+          </label>
 
-        <div className="page-actions">
-          <button className="action-button primary" disabled={loadingPreview || confirming || authLoading} type="submit">
-            {loadingPreview ? 'Fetching metadata...' : 'Fetch metadata preview'}
-          </button>
-          {preview ? (
-            <button
-              className="action-button primary"
-              type="button"
-              disabled={confirming || authLoading}
-              onClick={handleConfirmSubmit}
-            >
-              {confirming ? 'Submitting...' : 'Confirm submission'}
+          <div className="page-actions">
+            <button className="action-button primary" disabled={loadingPreview || confirming || authLoading} type="submit">
+              {loadingPreview ? 'Fetching metadata...' : 'Fetch metadata preview'}
             </button>
+            {preview ? (
+              <button
+                className="action-button primary"
+                type="button"
+                disabled={confirming || authLoading}
+                onClick={handleConfirmSubmit}
+              >
+                {confirming ? 'Submitting...' : 'Confirm submission'}
+              </button>
+            ) : null}
+          </div>
+
+          {!session?.access_token && !authLoading ? (
+            <p className="status-text">You will be redirected to GitHub sign-in before submitting.</p>
           ) : null}
-        </div>
 
-        {!session?.access_token && !authLoading ? (
-          <p className="status-text">You will be redirected to GitHub sign-in before submitting.</p>
-        ) : null}
-
-        {preview ? (
-          <section className="detail-section" aria-label="Submission preview">
-            <div className="detail-section-header">
-              <h2>{preview.name}</h2>
-            </div>
-            <p className="status-text">{preview.description || 'No description provided.'}</p>
-            <div className="server-metrics">
-              <span>Stars: {preview.githubStars}</span>
-              <span>Forks: {preview.githubForks}</span>
-              <span>Open issues: {preview.openIssues}</span>
-            </div>
-            <div className="search-panel-field">
-              <span className="search-panel-label">Categories</span>
-              <div className="search-panel-tags">
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    type="button"
-                    className="tag-chip"
-                    data-active={selectedCategorySlugs.includes(category.slug)}
-                    onClick={() => toggleCategory(category.slug)}
-                  >
-                    {category.name}
-                  </button>
-                ))}
+          {preview ? (
+            <section className="detail-section" aria-label="Submission preview">
+              <div className="detail-section-header">
+                <h2>{preview.name}</h2>
               </div>
-            </div>
-          </section>
-        ) : null}
+              <p className="status-text">{preview.description || 'No description provided.'}</p>
+              <div className="server-metrics">
+                <span>Stars: {preview.githubStars}</span>
+                <span>Forks: {preview.githubForks}</span>
+                <span>Open issues: {preview.openIssues}</span>
+              </div>
+              <div className="search-panel-field">
+                <span className="search-panel-label">Categories</span>
+                <div className="search-panel-tags">
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      className="tag-chip"
+                      data-active={selectedCategorySlugs.includes(category.slug)}
+                      onClick={() => toggleCategory(category.slug)}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          ) : null}
 
-        {error ? <p className="status-text">{error}</p> : null}
-      </form>
-    </section>
+          {error ? <p className="status-text">{error}</p> : null}
+        </form>
+      </section>
+    </>
   );
 }
