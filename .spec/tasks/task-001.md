@@ -1,7 +1,7 @@
 ---
 task: 001
 feature: mcp-discovery-registry
-status: pending
+status: complete
 depends_on: []
 ---
 
@@ -61,19 +61,59 @@ _Skills: /code-writing-software-development — project structure, TypeScript co
 ---
 
 ## Acceptance Criteria
-- [ ] `npm install` succeeds from root with no errors
-- [ ] TypeScript compiles in all three packages (`npm run build` or `tsc --noEmit`)
-- [ ] Shared types are importable from both client and server
-- [ ] ESLint and Prettier run without errors
-- [ ] Vitest runs (even with zero tests) in both client and server
-- [ ] `/verify` passes
+- [x] `npm install` succeeds from root with no errors
+- [x] TypeScript compiles in all three packages (`npm run build` or `tsc --noEmit`)
+- [x] Shared types are importable from both client and server
+- [x] ESLint and Prettier run without errors
+- [x] Vitest runs (even with zero tests) in both client and server
+- [x] `/verify` passes
 
 ---
 
-## Handoff to Next Task
-> Fill via `/task-handoff` after completing this task.
+## Handoff — What Was Done
+- Scaffolded npm workspaces monorepo with `client/`, `server/`, and `shared/` packages plus root TypeScript project references.
+- Implemented shared domain/API contract types and consumed them in both client and server packages.
+- Added root ESLint, Prettier, and Vitest setup with package scripts and verified build, typecheck, lint, test, and formatting checks.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+## Handoff — Patterns Learned
+- In this environment, npm workspace dependency protocol `workspace:*` fails, so local package linkage uses `file:` to keep install compatibility.
+- Running workspace scripts via explicit CLI paths under `node_modules` avoids Windows terminal resolution issues for `tsc`, `eslint`, `vite`, and `vitest`.
+- Prettier and ESLint should ignore generated artifacts and task-planning documents for signal-focused verification.
+
+## Handoff — Files Changed
+- package.json
+- package-lock.json
+- tsconfig.base.json
+- tsconfig.json
+- eslint.config.mjs
+- .prettierrc.json
+- .prettierignore
+- client/package.json
+- client/tsconfig.json
+- client/vite.config.ts
+- client/vitest.config.ts
+- client/tailwind.config.ts
+- client/postcss.config.cjs
+- client/index.html
+- client/src/main.tsx
+- client/src/App.tsx
+- client/src/index.css
+- client/src/vite-env.d.ts
+- server/package.json
+- server/tsconfig.json
+- server/vitest.config.ts
+- server/src/index.ts
+- shared/package.json
+- shared/tsconfig.json
+- shared/src/index.ts
+- shared/src/types/api-response.ts
+- shared/src/types/category.ts
+- shared/src/types/favorite.ts
+- shared/src/types/index.ts
+- shared/src/types/server.ts
+- shared/src/types/tag.ts
+- shared/src/types/user.ts
+- shared/src/types/vote.ts
+
+## Status
+COMPLETE

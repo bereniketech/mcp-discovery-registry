@@ -1,0 +1,10 @@
+.claude/
+.github/copilot-instructions.md
+.spec/
+build
+coverage
+dist
+node_modules
+client/dist/
+package-lock.json
+*.log
