@@ -11,7 +11,8 @@ export default defineConfig({
     viewport: { width: 1280, height: 800 },
   },
   webServer: {
-    command: 'node ./node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4173',
+    command: 'node ../node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4173',
+    cwd: './client',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: true,
     timeout: 120_000,
