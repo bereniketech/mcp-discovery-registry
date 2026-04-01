@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import crypto from 'crypto';
 
 /**
  * GitHub credentials and configuration schema.
@@ -37,7 +38,6 @@ export function loadGitHubConfig(): GitHubConfig {
   // Validate that at least one auth method is provided
   const hasTokenAuth = validated.token;
   const hasAppAuth = validated.appId && validated.appSecret;
-  const hasWebhook = validated.webhookSecret;
 
   if (!hasTokenAuth && !hasAppAuth) {
     throw new Error(
@@ -82,7 +82,6 @@ export function validateGitHubWebhookSignature(
     return false;
   }
 
-  const crypto = require('crypto');
   const hash = crypto.createHmac('sha256', secret).update(payload).digest('hex');
   const expectedSignature = `sha256=${hash}`;
 
