@@ -1,7 +1,7 @@
 ---
 task: 007
 feature: mcp-discovery-registry
-status: pending
+status: completed
 depends_on: [005]
 ---
 
@@ -57,16 +57,16 @@ _Skills: /code-writing-software-development — scoring algorithm; /postgres-pat
 ---
 
 ## Acceptance Criteria
-- [ ] GET /api/v1/trending returns servers ordered by composite trending score
-- [ ] Recently active servers with fewer stars rank higher than stale servers with more stars
-- [ ] Default limit is 10, configurable via query param
-- [ ] Response is cached for 60s
-- [ ] `/verify` passes
+- [x] GET /api/v1/trending returns servers ordered by composite trending score
+- [x] Recently active servers with fewer stars rank higher than stale servers with more stars
+- [x] Default limit is 10, configurable via query param
+- [x] Response is cached for 60s
+- [x] `/verify` passes
 
 ---
 
 ## Handoff to Next Task
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:** server/src/services/trending.ts, server/src/routes/trending.ts, server/src/index.ts, server/src/services/trending.test.ts, server/src/routes/trending.test.ts, .spec/tasks/task-007.md, bug-log.md
+**Decisions made:** Trending score is computed live in SQL from votes, stars, and 30-day recency decay (`last_commit_at`, fallback `created_at`); endpoint caches per-limit responses for 60s in-memory using route-local Map.
+**Context for next task:** Trending endpoint is mounted at `/api/v1/trending` with optional `limit` query param (default 10, min 1, max 100). Unit tests validate score weighting/recency behavior and route tests validate limit handling + cache hit behavior.
+**Open questions:** None.

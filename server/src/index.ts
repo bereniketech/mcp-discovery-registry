@@ -8,11 +8,13 @@ import healthRouter from './routes/health.js';
 import createServersRouter from './routes/servers.js';
 import createServerActionsRouter from './routes/server-actions.js';
 import createMeRouter from './routes/me.js';
+import createTrendingRouter from './routes/trending.js';
 import { GitHubFetcherService } from './services/github-fetcher.js';
 import { ServerService } from './services/server.js';
 import { VoteService } from './services/vote.js';
 import { FavoriteService } from './services/favorite.js';
 import { TagService } from './services/tag.js';
+import { TrendingService } from './services/trending.js';
 
 const app = express();
 
@@ -52,12 +54,14 @@ const serverService = new ServerService(githubFetcherService);
 const voteService = new VoteService();
 const favoriteService = new FavoriteService();
 const tagService = new TagService();
+const trendingService = new TrendingService();
 app.use('/api/v1/servers', createServersRouter(serverService));
 app.use('/api/v1/servers', createServerActionsRouter(voteService, favoriteService, tagService));
 app.use('/api/v1/me', createMeRouter({
   listFavoritesByUser: favoriteService.listFavoritesByUser.bind(favoriteService),
   listByAuthor: serverService.listByAuthor.bind(serverService),
 }));
+app.use('/api/v1/trending', createTrendingRouter(trendingService));
 
 // Make db available to request handlers via app.locals
 app.locals['db'] = db;
