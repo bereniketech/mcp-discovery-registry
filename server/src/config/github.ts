@@ -87,7 +87,7 @@ export function validateGitHubWebhookSignature(
 
   // Use timingSafeEqual to prevent timing attacks
   try {
-    return crypto.timingSafeEqual(signature, expectedSignature);
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
   } catch {
     return false;
   }
