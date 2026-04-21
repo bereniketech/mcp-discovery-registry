@@ -1,0 +1,6 @@
+.kit/
+.spec/
+node_modules/
+dist/
+build/
+.git/
