@@ -41,7 +41,6 @@ export class VoteService {
         await tx.insert(votes).values({
           userId: params.userId,
           serverId: params.serverId,
-          value: 1,
         });
       }
 

@@ -42,8 +42,8 @@ describe('TagService.addTagToServer', () => {
     };
   }
 
-  it('creates and associates a new normalized tag for owner', async () => {
-    const selectServer = createFluentChain([{ id: 'server-1', authorId: 'user-1' }]);
+  it('creates and associates a new normalized tag for any authenticated user', async () => {
+    const selectServer = createFluentChain([{ id: 'server-1' }]);
     const selectTagBySlug = createFluentChain([]);
     const selectAssociation = createFluentChain([]);
     const selectUsageCount = {
@@ -84,7 +84,7 @@ describe('TagService.addTagToServer', () => {
   });
 
   it('returns duplicate_tag when server already has tag association', async () => {
-    const selectServer = createFluentChain([{ id: 'server-1', authorId: 'user-1' }]);
+    const selectServer = createFluentChain([{ id: 'server-1' }]);
     const selectTagBySlug = createFluentChain([{ id: 'tag-1' }]);
     const selectAssociation = createFluentChain([{ id: 'assoc-1' }]);
 
@@ -112,13 +112,26 @@ describe('TagService.addTagToServer', () => {
     } satisfies Partial<AppError>);
   });
 
-  it('returns forbidden when non-owner adds tag', async () => {
-    const selectServer = createFluentChain([{ id: 'server-1', authorId: 'owner-1' }]);
+  it('allows a non-owner authenticated user to add a tag (community tagging)', async () => {
+    const selectServer = createFluentChain([{ id: 'server-1' }]);
+    const selectTagBySlug = createFluentChain([{ id: 'tag-2' }]);
+    const selectAssociation = createFluentChain([]);
+    const selectUsageCount = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([{ count: 1 }]),
+    };
 
     const tx = {
-      select: vi.fn().mockReturnValueOnce(selectServer),
-      insert: vi.fn(),
-      update: vi.fn(),
+      select: vi
+        .fn()
+        .mockReturnValueOnce(selectServer)
+        .mockReturnValueOnce(selectTagBySlug)
+        .mockReturnValueOnce(selectAssociation)
+        .mockReturnValueOnce(selectUsageCount),
+      insert: vi
+        .fn()
+        .mockReturnValueOnce({ values: vi.fn().mockResolvedValue(undefined) }),
+      update: vi.fn().mockReturnValue(createUpdateChain()),
     };
 
     const database = {
@@ -127,11 +140,16 @@ describe('TagService.addTagToServer', () => {
 
     const service = new TagService(database as unknown as typeof import('../db/index.js').db);
 
-    await expect(
-      service.addTagToServer({ userId: 'user-1', serverId: 'server-1', tag: 'cli' }),
-    ).rejects.toMatchObject({
-      status: 403,
-      code: 'forbidden',
-    } satisfies Partial<AppError>);
+    const result = await service.addTagToServer({
+      userId: 'non-owner-user',
+      serverId: 'server-1',
+      tag: 'cli',
+    });
+
+    expect(result).toEqual({
+      tagId: 'tag-2',
+      tag: 'cli',
+      serverId: 'server-1',
+    });
   });
 });

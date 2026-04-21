@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 
 export interface AuthUser {
+  id?: string;
   email?: string;
   user_metadata?: Record<string, unknown>;
 }

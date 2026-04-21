@@ -7,11 +7,21 @@ import DOMPurify from 'dompurify';
 import { ConfigGenerator } from '../components/ConfigGenerator.js';
 import { Seo } from '../components/Seo.js';
 import { TagInput } from '../components/TagInput.js';
+import { CommentThread } from '../components/CommentThread.js';
+import { StarRating } from '../components/StarRating.js';
+import { OwnershipClaim } from '../components/OwnershipClaim.js';
 import { useAuth } from '../hooks/useAuth.js';
-import { apiClient, type Server, type ToolSchema } from '../lib/api.js';
+import { apiClient, type HealthStatus, type Server, type ServerVersion, type ToolSchema } from '../lib/api.js';
 
 const STALE_DAYS_THRESHOLD = 90;
 const DEFAULT_SERVER_OG_IMAGE = 'https://avatars.githubusercontent.com/u/9919?s=400&v=4';
+
+const HEALTH_BADGE_STYLES: Record<HealthStatus, { background: string; color: string; label: string }> = {
+  healthy: { background: '#dcfce7', color: '#166534', label: 'Healthy' },
+  stale: { background: '#fef9c3', color: '#854d0e', label: 'Possibly stale' },
+  dead: { background: '#fee2e2', color: '#991b1b', label: 'Archived / not found' },
+  unknown: { background: '#f3f4f6', color: '#374151', label: 'Status unknown' },
+};
 
 function parseToolSchemasFromReadme(readmeContent: string | null | undefined): ToolSchema[] {
   if (!readmeContent) {
@@ -148,6 +158,8 @@ function getServerOgImage(server: Server): string {
   return DEFAULT_SERVER_OG_IMAGE;
 }
 
+type DetailTab = 'readme' | 'versions';
+
 export function ServerDetail() {
   const { slug } = useParams<{ slug: string }>();
   const detailPath = slug ? `/servers/${slug}` : null;
@@ -161,6 +173,12 @@ export function ServerDetail() {
   const [isVoted, setIsVoted] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [knownTags, setKnownTags] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<DetailTab>('readme');
+  const [versions, setVersions] = useState<ServerVersion[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportStatus, setReportStatus] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -242,14 +260,66 @@ export function ServerDetail() {
       return [];
     }
 
-    if (server.toolSchemas && server.toolSchemas.length > 0) {
-      return server.toolSchemas;
-    }
-
-    return parseToolSchemasFromReadme(server.readmeContent);
+    return server.toolSchemas ?? [];
   }, [server]);
 
   const staleRepository = isStale(server?.lastCommitAt);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadVersions() {
+      if (!server || activeTab !== 'versions') {
+        return;
+      }
+
+      setVersionsLoading(true);
+
+      try {
+        const result = await apiClient.getServerVersions(server.id);
+        if (!cancelled) {
+          setVersions(result.data);
+        }
+      } catch {
+        if (!cancelled) {
+          setVersions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setVersionsLoading(false);
+        }
+      }
+    }
+
+    void loadVersions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [server, activeTab]);
+
+  async function handleReport() {
+    if (!server) {
+      return;
+    }
+
+    const token = session?.access_token;
+    if (!token) {
+      await signInWithGitHub();
+      return;
+    }
+
+    setReportStatus(null);
+
+    try {
+      await apiClient.reportServer(server.id, reportReason, token);
+      setReportStatus('Report submitted. Thank you.');
+      setReportReason('');
+      setReportModalOpen(false);
+    } catch (reportError) {
+      setReportStatus(reportError instanceof Error ? reportError.message : 'Failed to submit report.');
+    }
+  }
 
   async function handleVoteToggle() {
     if (!server) {
@@ -391,7 +461,58 @@ export function ServerDetail() {
       <article className="server-detail-page">
         <section className="page-card">
           <p className="page-kicker">Server Detail</p>
-          <h1 className="page-title">{server.name}</h1>
+          <h1 className="page-title">
+            {server.name}
+            {' '}
+            {(() => {
+              const health = (server.healthStatus ?? 'unknown') as HealthStatus;
+              const badge = HEALTH_BADGE_STYLES[health];
+              return (
+                <span
+                  className="health-badge"
+                  style={{
+                    display: 'inline-block',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '0.7em',
+                    fontWeight: 500,
+                    background: badge.background,
+                    color: badge.color,
+                    verticalAlign: 'middle',
+                    marginLeft: '8px',
+                  }}
+                  aria-label={`Health status: ${badge.label}`}
+                >
+                  {badge.label}
+                </span>
+              );
+            })()}
+            {server.latestVersion ? (
+              <span
+                className="version-badge"
+                style={{
+                  display: 'inline-block',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '0.7em',
+                  fontWeight: 500,
+                  background: '#e0f2fe',
+                  color: '#0c4a6e',
+                  verticalAlign: 'middle',
+                  marginLeft: '6px',
+                }}
+              >
+                {server.latestVersion}
+              </span>
+            ) : null}
+          </h1>
+
+          {server.healthStatus === 'dead' ? (
+            <div className="dead-banner" role="alert" style={{ background: '#fee2e2', color: '#991b1b', padding: '12px', borderRadius: '6px', marginBottom: '12px' }}>
+              Repository not found or archived. {server.healthReason ? `(${server.healthReason})` : ''}
+            </div>
+          ) : null}
+
           <p className="page-copy">{server.description || 'No description available yet.'}</p>
 
           <div className="server-metrics" aria-label="Repository metrics">
@@ -399,6 +520,9 @@ export function ServerDetail() {
             <span>Forks: {server.githubForks.toLocaleString()}</span>
             <span>Open issues: {server.openIssues.toLocaleString()}</span>
             <span>Last commit: {formatDate(server.lastCommitAt)}</span>
+            {server.healthStatus === 'stale' && server.healthReason ? (
+              <span className="stale-note" style={{ color: '#854d0e' }}>{server.healthReason}</span>
+            ) : null}
           </div>
 
           {staleRepository ? (
@@ -436,23 +560,166 @@ export function ServerDetail() {
             >
               View on GitHub
             </a>
+            {session ? (
+              <button
+                type="button"
+                className="action-button"
+                style={{ color: '#b91c1c' }}
+                onClick={() => setReportModalOpen(true)}
+              >
+                Report
+              </button>
+            ) : null}
           </div>
 
           {actionError ? <p className="status-text">{actionError}</p> : null}
+          {reportStatus ? <p className="status-text">{reportStatus}</p> : null}
+
+          {reportModalOpen ? (
+            <div
+              className="report-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Report server"
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+              }}
+            >
+              <div
+                style={{
+                  background: '#fff',
+                  borderRadius: '8px',
+                  padding: '24px',
+                  maxWidth: '480px',
+                  width: '100%',
+                }}
+              >
+                <h2 style={{ marginTop: 0 }}>Report this server</h2>
+                <textarea
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  placeholder="Describe the issue (malicious content, spam, etc.)"
+                  rows={4}
+                  style={{ width: '100%', marginBottom: '12px', padding: '8px', boxSizing: 'border-box' }}
+                />
+                <div className="page-actions">
+                  <button
+                    type="button"
+                    className="action-button primary"
+                    onClick={handleReport}
+                    disabled={reportReason.trim().length === 0}
+                  >
+                    Submit report
+                  </button>
+                  <button
+                    type="button"
+                    className="action-button"
+                    onClick={() => {
+                      setReportModalOpen(false);
+                      setReportReason('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </section>
 
-        <section className="detail-section" aria-label="README">
+        <section className="detail-section" aria-label="README and Versions">
           <div className="detail-section-header">
-            <h2>README</h2>
-          </div>
-          {sanitizedReadme ? (
-            <div className="readme-content">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-                {sanitizedReadme}
-              </ReactMarkdown>
+            <div className="config-tabs" role="tablist" aria-label="Content tabs">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'readme'}
+                className={`config-tab-button${activeTab === 'readme' ? ' active' : ''}`}
+                onClick={() => setActiveTab('readme')}
+              >
+                README
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'versions'}
+                className={`config-tab-button${activeTab === 'versions' ? ' active' : ''}`}
+                onClick={() => setActiveTab('versions')}
+              >
+                Versions
+              </button>
             </div>
+          </div>
+
+          {activeTab === 'readme' ? (
+            sanitizedReadme ? (
+              <div className="readme-content">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                  {sanitizedReadme}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <p className="status-text">No README content available.</p>
+            )
           ) : (
-            <p className="status-text">No README content available.</p>
+            <div className="versions-timeline">
+              {versionsLoading ? (
+                <p className="status-text">Loading versions...</p>
+              ) : versions.length === 0 ? (
+                <p className="status-text">No release history found for this server.</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {versions.map((v) => (
+                    <li
+                      key={v.id}
+                      style={{ borderLeft: '3px solid #e5e7eb', paddingLeft: '16px', marginBottom: '16px' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: 700 }}>{v.version}</span>
+                        <span style={{ color: '#6b7280', fontSize: '0.875em' }}>
+                          {formatDate(v.releasedAt)}
+                        </span>
+                        {v.releaseUrl ? (
+                          <a
+                            href={v.releaseUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ fontSize: '0.875em' }}
+                          >
+                            Release notes
+                          </a>
+                        ) : null}
+                      </div>
+                      {v.changelog ? (
+                        <details style={{ marginTop: '8px' }}>
+                          <summary style={{ cursor: 'pointer', color: '#6b7280', fontSize: '0.875em' }}>
+                            Changelog
+                          </summary>
+                          <pre
+                            style={{
+                              whiteSpace: 'pre-wrap',
+                              fontSize: '0.8em',
+                              marginTop: '8px',
+                              background: '#f9fafb',
+                              padding: '8px',
+                              borderRadius: '4px',
+                            }}
+                          >
+                            {v.changelog}
+                          </pre>
+                        </details>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
         </section>
 
@@ -461,7 +728,7 @@ export function ServerDetail() {
             <h2>Tool Schemas</h2>
           </div>
           {toolSchemas.length === 0 ? (
-            <p className="status-text">No tool schemas were detected for this server.</p>
+            <p className="status-text">No tool schemas detected — the server may not document its tools.</p>
           ) : (
             <div className="schema-list">
               {toolSchemas.map((schema) => (
@@ -484,6 +751,24 @@ export function ServerDetail() {
 
         <ConfigGenerator server={server} />
         <TagInput currentTags={server.tags} suggestions={knownTags} onAddTag={handleTagAdd} />
+
+        <section className="detail-section" aria-label="Rating">
+          <div className="detail-section-header">
+            <h2>Rating</h2>
+          </div>
+          <StarRating
+            serverId={server.id}
+            ratingAvg={server.ratingAvg}
+            ratingCount={server.ratingCount}
+          />
+        </section>
+
+        <OwnershipClaim
+          server={server}
+          onOwnershipClaimed={(updated) => setServer(updated)}
+        />
+
+        <CommentThread serverId={server.id} />
       </article>
     </>
   );

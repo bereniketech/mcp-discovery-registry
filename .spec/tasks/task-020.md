@@ -217,15 +217,17 @@ class OwnershipService {
 
 ## Acceptance Criteria
 
-- [ ] `GET /api/v1/servers/:id/comments` returns paginated comment list with author info
-- [ ] Authenticated user can post, edit, delete their own comment; 403 on others
-- [ ] Soft-delete replaces body with `[deleted]`, keeps row
-- [ ] `POST /api/v1/servers/:id/rate` with score 1–5 upserts rating; `rating_avg` and `rating_count` updated
-- [ ] `StarRating` component renders correct filled stars for current user's rating
-- [ ] Claim init returns token with instructions; claim verify succeeds when token found in GitHub
-- [ ] Owner can PATCH server name/description/categories; non-owner gets 403
-- [ ] `npm run build` and `npm test` pass
-- [ ] No regressions in existing vote/favorite/tag flows
+- [x] `GET /api/v1/servers/:id/comments` returns paginated comment list with author info
+- [x] Authenticated user can post, edit, delete their own comment; 403 on others
+- [x] Soft-delete replaces body with `[deleted]`, keeps row
+- [x] `POST /api/v1/servers/:id/rate` with score 1–5 upserts rating; `rating_avg` and `rating_count` updated
+- [x] `StarRating` component renders correct filled stars for current user's rating
+- [x] Claim init returns token with instructions; claim verify succeeds when token found in GitHub
+- [x] Owner can PATCH server name/description/categories; non-owner gets 403
+- [x] `npm run build` and `npm test` pass
+- [x] No regressions in existing vote/favorite/tag flows
+
+Status: COMPLETE
 
 ---
 

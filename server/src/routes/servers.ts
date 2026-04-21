@@ -3,6 +3,11 @@ import rateLimit from 'express-rate-limit';
 import { requireAuth } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
 import { createServerSchema, listServersQuerySchema, previewServerSchema } from '../schemas/server.js';
+import { cacheResponse } from '../middleware/cache-middleware.js';
+import { apiCache } from '../lib/cache.js';
+
+const LIST_CACHE_TTL_SECONDS = 60;
+const DETAIL_CACHE_TTL_SECONDS = 300;
 
 const writeLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -23,6 +28,7 @@ type ServerServiceContract = {
     sort?: 'trending' | 'newest' | 'stars' | 'votes';
     page?: number;
     perPage?: number;
+    mcpVersion?: string;
   }) => Promise<{
     items: unknown[];
     page: number;
@@ -53,13 +59,14 @@ export function createServersRouter(service: ServerServiceContract): Router {
         categorySlugs: req.body.categories,
       });
 
+      apiCache.flushAll();
       res.status(201).json({ data: created });
     } catch (error) {
       next(error);
     }
   });
 
-  router.get('/', async (req, res, next) => {
+  router.get('/', cacheResponse(LIST_CACHE_TTL_SECONDS), async (req, res, next) => {
     const parsed = listServersQuerySchema.safeParse(req.query);
 
     if (!parsed.success) {
@@ -87,6 +94,7 @@ export function createServersRouter(service: ServerServiceContract): Router {
         sort?: 'trending' | 'newest' | 'stars' | 'votes';
         page?: number;
         perPage?: number;
+        mcpVersion?: string;
       } = {};
 
       if (parsed.data.q !== undefined) listParams.q = parsed.data.q;
@@ -95,6 +103,7 @@ export function createServersRouter(service: ServerServiceContract): Router {
       if (parsed.data.sort !== undefined) listParams.sort = parsed.data.sort;
       if (parsed.data.page !== undefined) listParams.page = parsed.data.page;
       if (parsed.data.per_page !== undefined) listParams.perPage = parsed.data.per_page;
+      if (parsed.data.mcp_version !== undefined) listParams.mcpVersion = parsed.data.mcp_version;
 
       const result = await serverService.list(listParams);
 
@@ -112,9 +121,10 @@ export function createServersRouter(service: ServerServiceContract): Router {
     }
   });
 
-  router.get('/:slug', async (req, res, next) => {
+  router.get('/:slug', cacheResponse(DETAIL_CACHE_TTL_SECONDS), async (req, res, next) => {
     try {
-      const server = await serverService.getBySlug(req.params.slug);
+      const slug = Array.isArray(req.params.slug) ? (req.params.slug[0] ?? '') : (req.params.slug ?? '');
+      const server = await serverService.getBySlug(slug);
       res.json({ data: server });
     } catch (error) {
       next(error);

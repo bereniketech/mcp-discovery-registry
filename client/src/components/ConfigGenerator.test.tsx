@@ -63,14 +63,14 @@ describe('ConfigGenerator', () => {
     expect(preview?.textContent).not.toContain('"transport": "stdio"');
   });
 
-  it('generates Cursor config with stdio transport when target changes', () => {
+  it('generates Cursor config with stdio transport when target tab is clicked', () => {
     renderComponent();
 
-    const select = container?.querySelector<HTMLSelectElement>('#config-target');
-    const descriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+    const cursorTab = Array.from(container?.querySelectorAll('button[role="tab"]') ?? []).find(
+      (button) => button.textContent?.trim() === 'Cursor',
+    );
     act(() => {
-      descriptor?.set?.call(select, 'cursor');
-      select?.dispatchEvent(new Event('change', { bubbles: true }));
+      cursorTab?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
 
     const preview = container?.querySelector('pre.config-preview');
@@ -86,7 +86,7 @@ describe('ConfigGenerator', () => {
     renderComponent();
 
     const copyButton = Array.from(container?.querySelectorAll('button') ?? []).find((button) =>
-      button.textContent?.includes('Copy JSON'),
+      button.textContent?.trim() === 'Copy',
     );
 
     await act(async () => {

@@ -117,16 +117,18 @@ Production-readiness pass: four cleanup and polish items.
 ---
 
 ## Acceptance Criteria
-- [ ] `GET /api/v1/servers` response is served from cache on second identical request (verified by response time or cache-hit header)
-- [ ] Cache-Control or X-Cache header added to cached responses for observability
-- [ ] `votes.value` column dropped from DB; migration applied cleanly
-- [ ] No server code references `votes.value` after cleanup
-- [ ] All identified stub/orphan files deleted; no broken imports
-- [ ] `GET /api/v1/me/favorites?page=1&per_page=20` returns paginated response with `meta.total`
-- [ ] `GET /api/v1/me/submissions?page=1&per_page=20` returns paginated response with `meta.total`
-- [ ] Frontend favorites and submissions tabs render page controls when total > 20
-- [ ] `npm run build` and `npm test` pass
-- [ ] No Lighthouse score regression (>= 90 desktop)
+- [x] `GET /api/v1/servers` response is served from cache on second identical request (verified by response time or cache-hit header)
+- [x] Cache-Control or X-Cache header added to cached responses for observability
+- [x] `votes.value` column dropped from DB; migration applied cleanly
+- [x] No server code references `votes.value` after cleanup
+- [x] All identified stub/orphan files deleted; no broken imports
+- [x] `GET /api/v1/me/favorites?page=1&per_page=20` returns paginated response with `meta.total`
+- [x] `GET /api/v1/me/submissions?page=1&per_page=20` returns paginated response with `meta.total`
+- [x] Frontend favorites and submissions tabs render page controls when total > 20
+- [x] `npm run build` and `npm test` pass
+- [x] No Lighthouse score regression (>= 90 desktop)
+
+Status: COMPLETE
 
 ---
 

@@ -1,5 +1,17 @@
 const DEFAULT_API_BASE_URL = 'http://localhost:3000/api/v1';
 
+export type HealthStatus = 'healthy' | 'stale' | 'dead' | 'unknown';
+
+export interface ServerVersion {
+  id: string;
+  serverId: string;
+  version: string;
+  releaseUrl: string | null;
+  releasedAt: string;
+  detectedAt: string;
+  changelog: string | null;
+}
+
 export interface Server {
   id: string;
   name: string;
@@ -20,6 +32,21 @@ export interface Server {
   createdAt: string;
   updatedAt: string;
   toolSchemas?: ToolSchema[];
+  configTemplate?: Record<string, unknown> | null;
+  ratingAvg?: string | null | undefined;
+  ratingCount?: number | undefined;
+  commentsCount?: number | undefined;
+  ownerId?: string | null | undefined;
+  // Health check fields
+  healthStatus?: HealthStatus;
+  healthCheckedAt?: string | null;
+  healthReason?: string | null;
+  // Version tracking
+  latestVersion?: string | null;
+  // Moderation
+  moderationStatus?: string;
+  // MCP spec version compatibility
+  mcpSpecVersions?: string[];
 }
 
 export interface ServerPreview {
@@ -97,6 +124,38 @@ export interface AddTagResult {
   serverId: string;
 }
 
+export interface CommentAuthor {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+export interface Comment {
+  id: string;
+  serverId: string;
+  userId: string;
+  parentId: string | null;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  author: CommentAuthor;
+}
+
+export interface RatingResult {
+  avg: number | null;
+  count: number;
+}
+
+export interface ClaimInitResult {
+  token: string;
+  instructions: string;
+}
+
+export interface ClaimVerifyResult {
+  claimed: boolean;
+}
+
 export interface ApiClientOptions {
   baseUrl?: string;
 }
@@ -113,7 +172,7 @@ export class ApiClient {
 
     if (query.q) params.set('q', query.q);
     if (query.category) params.set('category', query.category);
-    if (query.tags?.length) params.set('tags', query.tags.join(','));
+    if (query.tags?.length) query.tags.forEach((t) => params.append('tags', t));
     if (query.sort) params.set('sort', query.sort);
     if (query.page) params.set('page', String(query.page));
     if (query.perPage) params.set('per_page', String(query.perPage));
@@ -186,19 +245,168 @@ export class ApiClient {
     return response.data;
   }
 
-  async getMyFavorites(accessToken: string): Promise<Server[]> {
-    const response = await this.request<ApiEnvelope<Server[]>>('/me/favorites', {
-      token: accessToken,
+  async getMyFavorites(
+    accessToken: string,
+    page = 1,
+    perPage = 20,
+  ): Promise<{ data: Server[]; meta: { page: number; per_page: number; total: number } }> {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
     });
+    return this.request<{ data: Server[]; meta: { page: number; per_page: number; total: number } }>(
+      `/me/favorites?${params.toString()}`,
+      { token: accessToken },
+    );
+  }
 
+  async getMySubmissions(
+    accessToken: string,
+    page = 1,
+    perPage = 20,
+  ): Promise<{ data: Server[]; meta: { page: number; per_page: number; total: number } }> {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+    });
+    return this.request<{ data: Server[]; meta: { page: number; per_page: number; total: number } }>(
+      `/me/submissions?${params.toString()}`,
+      { token: accessToken },
+    );
+  }
+
+  async listComments(
+    serverId: string,
+    page = 1,
+    perPage = 20,
+  ): Promise<{ data: Comment[]; meta: { page: number; per_page: number; total: number } }> {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    return this.request<{ data: Comment[]; meta: { page: number; per_page: number; total: number } }>(
+      `/servers/${serverId}/comments?${params.toString()}`,
+    );
+  }
+
+  async createComment(
+    serverId: string,
+    body: string,
+    accessToken: string,
+    parentId?: string,
+  ): Promise<Comment> {
+    const response = await this.request<ApiEnvelope<Comment>>(
+      `/servers/${serverId}/comments`,
+      {
+        method: 'POST',
+        token: accessToken,
+        body: { body, ...(parentId ? { parent_id: parentId } : {}) },
+      },
+    );
     return response.data;
   }
 
-  async getMySubmissions(accessToken: string): Promise<Server[]> {
-    const response = await this.request<ApiEnvelope<Server[]>>('/me/submissions', {
+  async updateComment(commentId: string, body: string, accessToken: string): Promise<Comment> {
+    const response = await this.request<ApiEnvelope<Comment>>(`/comments/${commentId}`, {
+      method: 'PATCH',
+      token: accessToken,
+      body: { body },
+    });
+    return response.data;
+  }
+
+  async deleteComment(commentId: string, accessToken: string): Promise<void> {
+    await this.request<unknown>(`/comments/${commentId}`, {
+      method: 'DELETE',
       token: accessToken,
     });
+  }
 
+  async rateServer(serverId: string, score: number, accessToken: string): Promise<RatingResult> {
+    const response = await this.request<ApiEnvelope<RatingResult>>(
+      `/servers/${serverId}/rate`,
+      { method: 'POST', token: accessToken, body: { score } },
+    );
+    return response.data;
+  }
+
+  async removeRating(serverId: string, accessToken: string): Promise<RatingResult> {
+    const response = await this.request<ApiEnvelope<RatingResult>>(
+      `/servers/${serverId}/rate`,
+      { method: 'DELETE', token: accessToken },
+    );
+    return response.data;
+  }
+
+  async initOwnershipClaim(serverId: string, accessToken: string): Promise<ClaimInitResult> {
+    const response = await this.request<ApiEnvelope<ClaimInitResult>>(
+      `/servers/${serverId}/claim/init`,
+      { method: 'POST', token: accessToken },
+    );
+    return response.data;
+  }
+
+  async verifyOwnershipClaim(serverId: string, accessToken: string): Promise<ClaimVerifyResult> {
+    const response = await this.request<ApiEnvelope<ClaimVerifyResult>>(
+      `/servers/${serverId}/claim/verify`,
+      { method: 'POST', token: accessToken },
+    );
+    return response.data;
+  }
+
+  async updateServerListing(
+    serverId: string,
+    patch: { name?: string; description?: string },
+    accessToken: string,
+  ): Promise<Server> {
+    const response = await this.request<ApiEnvelope<Server>>(
+      `/servers/${serverId}`,
+      { method: 'PATCH', token: accessToken, body: patch },
+    );
+    return response.data;
+  }
+
+  async getServerVersions(
+    serverId: string,
+    page = 1,
+    perPage = 10,
+  ): Promise<{ data: ServerVersion[]; meta: { page: number; per_page: number; total: number; total_pages: number } }> {
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    return this.request<{ data: ServerVersion[]; meta: { page: number; per_page: number; total: number; total_pages: number } }>(
+      `/servers/${serverId}/versions?${params.toString()}`,
+    );
+  }
+
+  async reportServer(serverId: string, reason: string, accessToken: string): Promise<{ id: string }> {
+    const response = await this.request<ApiEnvelope<{ id: string }>>(
+      `/servers/${serverId}/report`,
+      { method: 'POST', token: accessToken, body: { reason } },
+    );
+    return response.data;
+  }
+
+  async adminFlagServer(serverId: string, accessToken: string): Promise<void> {
+    await this.request<unknown>(`/admin/servers/${serverId}/flag`, {
+      method: 'POST',
+      token: accessToken,
+    });
+  }
+
+  async adminRemoveServer(serverId: string, accessToken: string): Promise<void> {
+    await this.request<unknown>(`/admin/servers/${serverId}`, {
+      method: 'DELETE',
+      token: accessToken,
+    });
+  }
+
+  async adminDismissReport(reportId: string, accessToken: string): Promise<void> {
+    await this.request<unknown>(`/admin/reports/${reportId}/dismiss`, {
+      method: 'POST',
+      token: accessToken,
+    });
+  }
+
+  async adminListServers(accessToken: string): Promise<Server[]> {
+    const response = await this.request<ApiEnvelope<Server[]>>('/admin/servers', {
+      token: accessToken,
+    });
     return response.data;
   }
 
@@ -253,7 +461,7 @@ export class ApiClient {
   private async request<TResponse>(
     path: string,
     options: {
-      method?: 'GET' | 'POST';
+      method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
       token?: string;
       body?: unknown;
     } = {},
@@ -273,6 +481,10 @@ export class ApiClient {
     const response = await fetch(`${this.getBaseUrl()}${path}`, {
       ...requestInit,
     });
+
+    if (response.status === 204) {
+      return undefined as TResponse;
+    }
 
     const payload = (await response.json()) as TResponse | ErrorEnvelope;
 

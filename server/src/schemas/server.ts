@@ -32,6 +32,7 @@ export const listServersQuerySchema = z.object({
   sort: z.enum(['trending', 'newest', 'stars', 'votes']).optional(),
   page: z.coerce.number().int().min(1).optional(),
   per_page: z.coerce.number().int().min(1).max(100).optional(),
+  mcp_version: z.string().trim().optional(),
 });
 
 export const addTagSchema = z.object({

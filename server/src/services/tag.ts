@@ -32,7 +32,7 @@ export class TagService {
       }
 
       const serverRows = await tx
-        .select({ id: servers.id, authorId: servers.authorId })
+        .select({ id: servers.id })
         .from(servers)
         .where(eq(servers.id, params.serverId))
         .limit(1);
@@ -41,10 +41,6 @@ export class TagService {
 
       if (!server) {
         throw new AppError('Server not found', 404, 'server_not_found');
-      }
-
-      if (server.authorId !== params.userId) {
-        throw new AppError('Only the server owner can add tags', 403, 'forbidden');
       }
 
       let tagId: string;

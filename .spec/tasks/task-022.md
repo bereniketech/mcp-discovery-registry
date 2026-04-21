@@ -265,19 +265,21 @@ Update `ServerDetail.tsx`:
 
 ## Acceptance Criteria
 
-- [ ] `WebhookService.dispatch('server.created', server)` fires after every successful submission
-- [ ] Discord webhook receives embed with server name, description, GitHub URL
-- [ ] Generic webhook receives `X-Webhook-Signature` header and correct JSON payload
-- [ ] `GET /feeds/rss.xml` returns valid RSS 2.0 with last 50 servers
-- [ ] `GET /feeds/rss.xml?category=<slug>` filters to that category
-- [ ] `GET /feeds/atom.xml` returns valid Atom 1.0
-- [ ] Feed responses served with correct `Content-Type` header and cached 300s
-- [ ] `<link rel="alternate">` tags present in `index.html`
-- [ ] `GET /api/v1/servers?mcp_version=2025-03-26` filters correctly
-- [ ] `servers.mcp_spec_versions` populated for servers whose README/package.json references a known spec version
-- [ ] `servers.tool_schemas` populated from README JSON blocks or `mcp.json` during create and cron refresh
-- [ ] `ServerDetail` renders tool list from `tool_schemas` (no client-side parsing)
-- [ ] `npm run build` and `npm test` pass
+- [x] `WebhookService.dispatch('server.created', server)` fires after every successful submission
+- [x] Discord webhook receives embed with server name, description, GitHub URL
+- [x] Generic webhook receives `X-Webhook-Signature` header and correct JSON payload
+- [x] `GET /feeds/rss.xml` returns valid RSS 2.0 with last 50 servers
+- [x] `GET /feeds/rss.xml?category=<slug>` filters to that category
+- [x] `GET /feeds/atom.xml` returns valid Atom 1.0
+- [x] Feed responses served with correct `Content-Type` header and cached 300s
+- [x] `<link rel="alternate">` tags present in `index.html`
+- [x] `GET /api/v1/servers?mcp_version=2025-03-26` filters correctly
+- [x] `servers.mcp_spec_versions` populated for servers whose README/package.json references a known spec version
+- [x] `servers.tool_schemas` populated from README JSON blocks or `mcp.json` during create and cron refresh
+- [x] `ServerDetail` renders tool list from `tool_schemas` (no client-side parsing)
+- [x] `npm run build` and `npm test` pass
+
+Status: COMPLETE
 
 ---
 

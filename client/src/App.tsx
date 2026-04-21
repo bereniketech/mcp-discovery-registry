@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/layout/Layout.js';
+import { AdminPage } from './pages/AdminPage.js';
 import { AuthCallbackPage } from './pages/AuthCallbackPage.js';
 import { CategoryPage } from './pages/CategoryPage.js';
 import { HomePage } from './pages/HomePage.js';
@@ -17,6 +18,7 @@ export default function App() {
         <Route element={<SubmitPage />} path="/submit" />
         <Route element={<Profile />} path="/profile" />
         <Route element={<CategoryPage />} path="/category/:slug" />
+        <Route element={<AdminPage />} path="/admin" />
       </Route>
     </Routes>
   );

@@ -10,6 +10,7 @@ export interface SearchParams {
   sort?: SortOption;
   page?: number;
   perPage?: number;
+  mcpVersion?: string;
 }
 
 export interface SearchPageResult<T> {
@@ -142,7 +143,8 @@ export class SearchService {
     const tsQueryStr = params.q?.trim() ? buildTsQueryString(params.q) : null;
 
     // Build WHERE conditions
-    const whereParts: SQL[] = [];
+    // Always exclude flagged/removed servers from public listings.
+    const whereParts: SQL[] = [sql`s.moderation_status = 'active'`];
 
     if (tsQueryStr) {
       whereParts.push(sql`s.search_vector @@ to_tsquery('english', ${tsQueryStr})`);
@@ -164,6 +166,10 @@ export class SearchService {
           WHERE st2.server_id = s.id AND t2.slug = ${tag}
         )`);
       }
+    }
+
+    if (params.mcpVersion) {
+      whereParts.push(sql`${params.mcpVersion} = ANY(s.mcp_spec_versions)`);
     }
 
     const whereClause: SQL =

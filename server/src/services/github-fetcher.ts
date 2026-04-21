@@ -26,6 +26,24 @@ interface GitHubReadmeResponse {
   encoding: string;
 }
 
+interface GitHubReleaseResponse {
+  tag_name: string;
+  html_url: string;
+  published_at: string | null;
+  body: string | null;
+}
+
+interface GitHubTreeResponse {
+  tree: Array<{ path: string; type: string }>;
+}
+
+export interface GitHubRelease {
+  version: string;
+  releaseUrl: string;
+  releasedAt: Date;
+  changelog: string | null;
+}
+
 export interface GitHubRepositoryMetadata {
   name: string;
   description: string;
@@ -35,6 +53,8 @@ export interface GitHubRepositoryMetadata {
   openIssues: number;
   lastCommitAt: Date | null;
   readmeContent: string | null;
+  rootFiles: string[];
+  mcpJsonContent: string | null;
 }
 
 export class GitHubFetcherService {
@@ -86,9 +106,11 @@ export class GitHubFetcherService {
       `${GITHUB_API_BASE}/repos/${owner}/${repo}`,
     );
 
-    const [lastCommitAt, readmeContent] = await Promise.all([
+    const [lastCommitAt, readmeContent, rootFiles, mcpJsonContent] = await Promise.all([
       this.fetchLatestCommitDate(owner, repo),
       this.fetchReadmeContent(owner, repo),
+      this.fetchRootFiles(owner, repo),
+      this.fetchMcpJson(owner, repo),
     ]);
 
     return {
@@ -100,7 +122,30 @@ export class GitHubFetcherService {
       openIssues: repoData.open_issues_count,
       lastCommitAt,
       readmeContent,
+      rootFiles,
+      mcpJsonContent,
     };
+  }
+
+  async fetchReleases(githubUrl: string): Promise<GitHubRelease[]> {
+    const { owner, repo } = this.parseGitHubUrl(githubUrl);
+
+    try {
+      const releases = await this.fetchJsonWithRetry<GitHubReleaseResponse[]>(
+        `${GITHUB_API_BASE}/repos/${owner}/${repo}/releases?per_page=30`,
+      );
+
+      return releases
+        .filter((r) => r.published_at !== null)
+        .map((r) => ({
+          version: r.tag_name,
+          releaseUrl: r.html_url,
+          releasedAt: new Date(r.published_at as string),
+          changelog: r.body ?? null,
+        }));
+    } catch {
+      return [];
+    }
   }
 
   private async fetchLatestCommitDate(owner: string, repo: string): Promise<Date | null> {
@@ -111,6 +156,35 @@ export class GitHubFetcherService {
 
       const dateRaw = commits[0]?.commit?.author?.date ?? commits[0]?.commit?.committer?.date;
       return dateRaw ? new Date(dateRaw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchRootFiles(owner: string, repo: string): Promise<string[]> {
+    try {
+      const tree = await this.fetchJsonWithRetry<GitHubTreeResponse>(
+        `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/trees/HEAD?recursive=0`,
+      );
+
+      return tree.tree
+        .filter((item) => item.type === 'blob')
+        .map((item) => item.path);
+    } catch {
+      return [];
+    }
+  }
+
+  async fetchMcpJson(owner: string, repo: string): Promise<string | null> {
+    try {
+      const url = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/mcp.json`;
+      const response = await fetch(url, { headers: this.headers });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      return await response.text();
     } catch {
       return null;
     }

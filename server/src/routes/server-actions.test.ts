@@ -10,10 +10,15 @@ function createTestApp(services: {
   toggleVote: ReturnType<typeof vi.fn>;
   toggleFavorite: ReturnType<typeof vi.fn>;
   addTagToServer: ReturnType<typeof vi.fn>;
+  upsert?: ReturnType<typeof vi.fn>;
+  remove?: ReturnType<typeof vi.fn>;
 }) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1/servers', createServerActionsRouter(services, services, services));
+  const ratingService = services.upsert && services.remove
+    ? { upsert: services.upsert, remove: services.remove }
+    : undefined;
+  app.use('/api/v1/servers', createServerActionsRouter(services, services, services, ratingService));
   app.use(errorHandler);
   return app;
 }
@@ -190,6 +195,83 @@ describe('server actions routes', () => {
       serverId: 'server-1',
       tag: 'Developer Tools',
     });
+  });
+
+  it('posts rating for authenticated user', async () => {
+    const token = await createAuthToken('user-1');
+    const services = {
+      toggleVote: vi.fn(),
+      toggleFavorite: vi.fn(),
+      addTagToServer: vi.fn(),
+      upsert: vi.fn().mockResolvedValue({ avg: 4.5, count: 2 }),
+      remove: vi.fn(),
+    };
+
+    const app = createTestApp(services);
+    const server = app.listen(0);
+    const { port } = server.address() as AddressInfo;
+
+    const response = await fetch(`http://127.0.0.1:${port}/api/v1/servers/server-1/rate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score: 4 }),
+    });
+
+    const json = await response.json();
+    server.close();
+
+    expect(response.status).toBe(200);
+    expect(json).toEqual({ data: { avg: 4.5, count: 2 } });
+    expect(services.upsert).toHaveBeenCalledWith('server-1', 'user-1', 4);
+  });
+
+  it('deletes rating for authenticated user', async () => {
+    const token = await createAuthToken('user-1');
+    const services = {
+      toggleVote: vi.fn(),
+      toggleFavorite: vi.fn(),
+      addTagToServer: vi.fn(),
+      upsert: vi.fn(),
+      remove: vi.fn().mockResolvedValue({ avg: null, count: 0 }),
+    };
+
+    const app = createTestApp(services);
+    const server = app.listen(0);
+    const { port } = server.address() as AddressInfo;
+
+    const response = await fetch(`http://127.0.0.1:${port}/api/v1/servers/server-1/rate`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const json = await response.json();
+    server.close();
+
+    expect(response.status).toBe(200);
+    expect(json).toEqual({ data: { avg: null, count: 0 } });
+    expect(services.remove).toHaveBeenCalledWith('server-1', 'user-1');
+  });
+
+  it('returns 401 for unauthenticated rate attempt', async () => {
+    const services = {
+      toggleVote: vi.fn(),
+      toggleFavorite: vi.fn(),
+      addTagToServer: vi.fn(),
+      upsert: vi.fn(),
+      remove: vi.fn(),
+    };
+    const app = createTestApp(services);
+    const server = app.listen(0);
+    const { port } = server.address() as AddressInfo;
+
+    const response = await fetch(`http://127.0.0.1:${port}/api/v1/servers/server-1/rate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score: 3 }),
+    });
+
+    server.close();
+    expect(response.status).toBe(401);
   });
 
   it('returns 409 when duplicate tag is submitted', async () => {

@@ -13,6 +13,7 @@ export function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const categoryFromUrl = searchParams.get('category') ?? '';
+  const queryFromUrl = searchParams.get('q') ?? '';
 
   const {
     query,
@@ -26,7 +27,7 @@ export function HomePage() {
     loading,
     error,
     hasActiveFilters,
-  } = useSearch({ initialCategory: categoryFromUrl });
+  } = useSearch({ initialCategory: categoryFromUrl, initialQuery: queryFromUrl });
 
   const { trending, loading: trendingLoading, error: trendingError } = useTrending(10);
 
@@ -62,6 +63,12 @@ export function HomePage() {
       setCategory(categoryFromUrl);
     }
   }, [categoryFromUrl, category, setCategory]);
+
+  useEffect(() => {
+    if (queryFromUrl !== query) {
+      setQuery(queryFromUrl);
+    }
+  }, [queryFromUrl, query, setQuery]);
 
   function handleCategoryChange(nextCategory: string) {
     setCategory(nextCategory);

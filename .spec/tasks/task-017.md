@@ -79,14 +79,16 @@ Three P1 gaps that break core user journeys:
 ---
 
 ## Acceptance Criteria
-- [ ] `/category/databases` (or any valid slug) renders a real server list — not a stub
-- [ ] CategoryPage shows category name as page heading and in `<title>`
-- [ ] CategoryPage has working pagination when total > 20
-- [ ] Typing in Header search navigates/filters results; debounce prevents request-per-keystroke
-- [ ] Header search input reflects current query when page loads with `?q=` param
-- [ ] All 4 write route groups have `writeLimiter` applied
-- [ ] 31st write request within 1 minute returns HTTP 429
-- [ ] `npm run build` passes; no console errors in browser
+- [x] `/category/databases` (or any valid slug) renders a real server list — not a stub
+- [x] CategoryPage shows category name as page heading and in `<title>`
+- [x] CategoryPage has working pagination when total > 20
+- [x] Typing in Header search navigates/filters results; debounce prevents request-per-keystroke
+- [x] Header search input reflects current query when page loads with `?q=` param
+- [x] All 4 write route groups have `writeLimiter` applied
+- [x] 31st write request within 1 minute returns HTTP 429
+- [x] `npm run build` passes; no console errors in browser
+
+Status: COMPLETE
 
 ---
 

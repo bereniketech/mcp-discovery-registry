@@ -111,10 +111,11 @@ test('server detail flow: view README and copy generated config', async ({ page 
 
   await page.goto('/servers/registry-agent');
 
-  await expect(page.getByRole('heading', { name: 'README' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'README' })).toBeVisible();
   await expect(page.getByText('This README is loaded in detail view.')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Copy JSON' }).click();
+  await page.getByRole('tab', { name: 'Claude Desktop' }).click();
+  await page.getByRole('button', { name: 'Copy' }).click();
   await expect(page.getByText('Config copied to clipboard.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Vote (10)' }).click();

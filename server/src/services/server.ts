@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import {
   categories,
@@ -8,9 +8,12 @@ import {
   tags,
 } from '../db/schema.js';
 import type { GitHubFetcherService, GitHubRepositoryMetadata } from './github-fetcher.js';
+import type { PaginatedResult } from '../routes/me.js';
 import { AppError } from '../utils/app-error.js';
 import { SearchService } from './search.js';
 import type { SearchParams } from './search.js';
+import { WebhookService } from './webhook.js';
+import { detectMcpSpecVersions, extractToolSchemasFromReadme, extractToolSchemasFromMcpJson } from '../utils/mcp-spec.js';
 
 interface CreateServerParams {
   githubUrl: string;
@@ -49,13 +52,16 @@ export interface ServerPreview {
 
 export class ServerService {
   private readonly searchService: SearchService;
+  private readonly webhookService: WebhookService;
 
   constructor(
     private readonly githubFetcher: Pick<GitHubFetcherService, 'fetchRepositoryMetadata'>,
     private readonly database: DbClient = db,
     searchService?: SearchService,
+    webhookService?: WebhookService,
   ) {
     this.searchService = searchService ?? new SearchService(database);
+    this.webhookService = webhookService ?? new WebhookService();
   }
 
   async create({ githubUrl, userId, categorySlugs = [] }: CreateServerParams): Promise<ServerResponse> {
@@ -80,10 +86,32 @@ export class ServerService {
 
     const slug = await this.generateUniqueSlug(metadata.name);
 
+    const toolSchemas = (() => {
+      if (metadata.mcpJsonContent) {
+        const fromMcp = extractToolSchemasFromMcpJson(metadata.mcpJsonContent);
+        if (fromMcp.length > 0) {
+          return fromMcp;
+        }
+      }
+      if (metadata.readmeContent) {
+        return extractToolSchemasFromReadme(metadata.readmeContent);
+      }
+      return [];
+    })();
+
+    const mcpSpecVersions = detectMcpSpecVersions(
+      metadata.readmeContent,
+      metadata.mcpJsonContent,
+    );
+
     try {
       const [created] = await this.database
         .insert(servers)
-        .values(this.toInsertPayload(metadata, userId, slug))
+        .values({
+          ...this.toInsertPayload(metadata, userId, slug),
+          toolSchemas: toolSchemas.length > 0 ? toolSchemas : [],
+          mcpSpecVersions,
+        })
         .returning();
 
       if (!created) {
@@ -99,11 +127,16 @@ export class ServerService {
         );
       }
 
-      return {
+      const result: ServerResponse = {
         ...created,
         categories: normalizedCategorySlugs,
         tags: [],
       };
+
+      // Dispatch webhook notification — fire-and-forget, does not block response.
+      void this.webhookService.dispatch('server.created', result);
+
+      return result;
     } catch (error) {
       if (this.isUniqueViolation(error)) {
         throw new AppError('This server is already registered.', 409, 'duplicate_server');
@@ -141,7 +174,7 @@ export class ServerService {
     const rows = await this.database
       .select()
       .from(servers)
-      .where(eq(servers.slug, slug))
+      .where(and(eq(servers.slug, slug), eq(servers.moderationStatus, 'active')))
       .limit(1);
 
     const server = rows[0];
@@ -166,11 +199,26 @@ export class ServerService {
     return this.searchService.search(params) as Promise<ServerListResult<ServerResponse>>;
   }
 
-  async listByAuthor(userId: string): Promise<ServerResponse[]> {
-    const rows = await this.database
-      .select()
-      .from(servers)
-      .where(eq(servers.authorId, userId));
+  async listByAuthor(
+    userId: string,
+    pagination: { page: number; perPage: number } = { page: 1, perPage: 20 },
+  ): Promise<PaginatedResult<ServerResponse>> {
+    const { page, perPage } = pagination;
+    const offset = (page - 1) * perPage;
+
+    const [rows, totalRows] = await Promise.all([
+      this.database
+        .select()
+        .from(servers)
+        .where(eq(servers.authorId, userId))
+        .orderBy(desc(servers.createdAt))
+        .limit(perPage)
+        .offset(offset),
+      this.database
+        .select({ total: count() })
+        .from(servers)
+        .where(eq(servers.authorId, userId)),
+    ]);
 
     const serverIds = rows.map((row) => row.id);
     const [categoriesMap, tagsMap] = await Promise.all([
@@ -178,11 +226,18 @@ export class ServerService {
       this.getTagsMap(serverIds),
     ]);
 
-    return rows.map((row) => ({
-      ...row,
-      categories: categoriesMap.get(row.id) ?? [],
-      tags: tagsMap.get(row.id) ?? [],
-    }));
+    return {
+      data: rows.map((row) => ({
+        ...row,
+        categories: categoriesMap.get(row.id) ?? [],
+        tags: tagsMap.get(row.id) ?? [],
+      })),
+      meta: {
+        page,
+        per_page: perPage,
+        total: Number(totalRows[0]?.total ?? 0),
+      },
+    };
   }
 
   private async generateUniqueSlug(name: string): Promise<string> {

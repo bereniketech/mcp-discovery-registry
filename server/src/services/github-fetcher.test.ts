@@ -46,7 +46,9 @@ describe('GitHubFetcherService', () => {
           },
         ]),
       )
-      .mockResolvedValueOnce(jsonResponse({ content: readme, encoding: 'base64' }));
+      .mockResolvedValueOnce(jsonResponse({ content: readme, encoding: 'base64' }))
+      .mockResolvedValueOnce(jsonResponse({ tree: [{ path: 'package.json', type: 'blob' }] }))
+      .mockResolvedValueOnce(new Response('not found', { status: 404 }));
 
     const service = new GitHubFetcherService();
     const result = await service.fetchRepositoryMetadata('https://github.com/org/repo-name');
@@ -61,6 +63,7 @@ describe('GitHubFetcherService', () => {
       readmeContent: '# Hello world',
     });
     expect(result.lastCommitAt?.toISOString()).toBe('2026-03-01T00:00:00.000Z');
+    expect(result.rootFiles).toContain('package.json');
   });
 
   it('retries transient failures and succeeds', async () => {
@@ -78,12 +81,14 @@ describe('GitHubFetcherService', () => {
         }),
       )
       .mockResolvedValueOnce(jsonResponse([]))
-      .mockResolvedValueOnce(new Response('missing readme', { status: 404 }));
+      .mockResolvedValueOnce(new Response('missing readme', { status: 404 }))
+      .mockResolvedValueOnce(jsonResponse({ tree: [] }))
+      .mockResolvedValueOnce(new Response('not found', { status: 404 }));
 
     const service = new GitHubFetcherService();
     const result = await service.fetchRepositoryMetadata('https://github.com/org/repo-name');
 
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenCalledTimes(6);
     expect(result.readmeContent).toBeNull();
     expect(result.lastCommitAt).toBeNull();
   });

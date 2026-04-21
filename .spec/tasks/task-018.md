@@ -93,15 +93,17 @@ Close five schema and business logic gaps identified in the P2 audit:
 ---
 
 ## Acceptance Criteria
-- [ ] `servers` table has `tool_schemas` (jsonb) and `config_template` (jsonb) columns in DB
-- [ ] Migration file exists and applies cleanly on fresh DB
-- [ ] GitHub metadata cron runs every 6 hours and updates stale records
-- [ ] Any authenticated user can tag any server (not just the submitter)
-- [ ] `categories` table has `display_order` integer column
-- [ ] `GET /api/v1/categories` returns categories in `display_order` order
-- [ ] `users` table has `email` column (nullable)
-- [ ] No existing tests broken; add tests for tagging permission fix and cron job logic
-- [ ] `npm run build` and `npm test` pass
+- [x] `servers` table has `tool_schemas` (jsonb) and `config_template` (jsonb) columns in DB
+- [x] Migration file exists and applies cleanly on fresh DB
+- [x] GitHub metadata cron runs every 6 hours and updates stale records
+- [x] Any authenticated user can tag any server (not just the submitter)
+- [x] `categories` table has `display_order` integer column
+- [x] `GET /api/v1/categories` returns categories in `display_order` order
+- [x] `users` table has `email` column (nullable)
+- [x] No existing tests broken; add tests for tagging permission fix and cron job logic
+- [x] `npm run build` and `npm test` pass
+
+Status: COMPLETE
 
 ---
 

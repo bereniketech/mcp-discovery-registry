@@ -4,6 +4,14 @@ import type { AddressInfo } from 'node:net';
 import { SignJWT } from 'jose';
 import { createMeRouter } from './me.js';
 import { errorHandler } from '../middleware/error.js';
+import type { PaginatedResult } from './me.js';
+
+function makePagedResult<T>(items: T[]): PaginatedResult<T> {
+  return {
+    data: items,
+    meta: { page: 1, per_page: 20, total: items.length },
+  };
+}
 
 function createTestApp(service: {
   listFavoritesByUser: ReturnType<typeof vi.fn>;
@@ -53,10 +61,11 @@ describe('me routes', () => {
     expect(response.status).toBe(401);
   });
 
-  it('returns user favorites for authenticated request', async () => {
+  it('returns user favorites for authenticated request with pagination meta', async () => {
     const token = await createAuthToken('user-1');
+    const items = [{ id: 'server-1', slug: 'repo-1' }];
     const service = {
-      listFavoritesByUser: vi.fn().mockResolvedValue([{ id: 'server-1', slug: 'repo-1' }]),
+      listFavoritesByUser: vi.fn().mockResolvedValue(makePagedResult(items)),
       listByAuthor: vi.fn(),
     };
 
@@ -74,15 +83,17 @@ describe('me routes', () => {
     server.close();
 
     expect(response.status).toBe(200);
-    expect(json).toEqual({ data: [{ id: 'server-1', slug: 'repo-1' }] });
-    expect(service.listFavoritesByUser).toHaveBeenCalledWith('user-1');
+    expect(json.data).toEqual(items);
+    expect(json.meta).toMatchObject({ page: 1, per_page: 20, total: 1 });
+    expect(service.listFavoritesByUser).toHaveBeenCalledWith('user-1', { page: 1, perPage: 20 });
   });
 
-  it('returns user submissions for authenticated request', async () => {
+  it('returns user submissions for authenticated request with pagination meta', async () => {
     const token = await createAuthToken('user-1');
+    const items = [{ id: 'server-2', slug: 'repo-2' }];
     const service = {
       listFavoritesByUser: vi.fn(),
-      listByAuthor: vi.fn().mockResolvedValue([{ id: 'server-2', slug: 'repo-2' }]),
+      listByAuthor: vi.fn().mockResolvedValue(makePagedResult(items)),
     };
 
     const app = createTestApp(service);
@@ -99,7 +110,47 @@ describe('me routes', () => {
     server.close();
 
     expect(response.status).toBe(200);
-    expect(json).toEqual({ data: [{ id: 'server-2', slug: 'repo-2' }] });
-    expect(service.listByAuthor).toHaveBeenCalledWith('user-1');
+    expect(json.data).toEqual(items);
+    expect(json.meta).toMatchObject({ page: 1, per_page: 20, total: 1 });
+    expect(service.listByAuthor).toHaveBeenCalledWith('user-1', { page: 1, perPage: 20 });
+  });
+
+  it('passes page and per_page query params to service', async () => {
+    const token = await createAuthToken('user-1');
+    const service = {
+      listFavoritesByUser: vi.fn().mockResolvedValue(makePagedResult([])),
+      listByAuthor: vi.fn(),
+    };
+
+    const app = createTestApp(service);
+    const server = app.listen(0);
+    const { port } = server.address() as AddressInfo;
+
+    await fetch(`http://127.0.0.1:${port}/api/v1/me/favorites?page=2&per_page=10`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    server.close();
+    expect(service.listFavoritesByUser).toHaveBeenCalledWith('user-1', { page: 2, perPage: 10 });
+  });
+
+  it('returns 422 for invalid pagination params', async () => {
+    const token = await createAuthToken('user-1');
+    const service = {
+      listFavoritesByUser: vi.fn(),
+      listByAuthor: vi.fn(),
+    };
+
+    const app = createTestApp(service);
+    const server = app.listen(0);
+    const { port } = server.address() as AddressInfo;
+
+    const response = await fetch(
+      `http://127.0.0.1:${port}/api/v1/me/favorites?per_page=999`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+
+    server.close();
+    expect(response.status).toBe(422);
   });
 });

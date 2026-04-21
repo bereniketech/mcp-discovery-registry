@@ -88,14 +88,16 @@ Fix three blocking bugs preventing the client from correctly consuming the API:
 ---
 
 ## Acceptance Criteria
-- [ ] `GET /api/v1/categories` returns 200 with `{ data: [...] }` — verified with curl or test
-- [ ] `GET /api/v1/tags` returns 200 with `{ data: [...] }` — verified with curl or test
-- [ ] Client tags filter sends repeated params: `?tags=foo&tags=bar` not `?tags=foo%2Cbar`
-- [ ] Server correctly filters by multiple tags when passed as repeated params
-- [ ] Only `VITE_API_BASE_URL` used across all client source files (zero occurrences of `VITE_API_URL`)
-- [ ] `.env.example` uses `VITE_API_BASE_URL=`
-- [ ] `npm run build` passes with no TypeScript errors
-- [ ] No regressions in existing server list / server detail endpoints
+- [x] `GET /api/v1/categories` returns 200 with `{ data: [...] }` — verified with curl or test
+- [x] `GET /api/v1/tags` returns 200 with `{ data: [...] }` — verified with curl or test
+- [x] Client tags filter sends repeated params: `?tags=foo&tags=bar` not `?tags=foo%2Cbar`
+- [x] Server correctly filters by multiple tags when passed as repeated params
+- [x] Only `VITE_API_BASE_URL` used across all client source files (zero occurrences of `VITE_API_URL`)
+- [x] `.env.example` uses `VITE_API_BASE_URL=`
+- [x] `npm run build` passes with no TypeScript errors
+- [x] No regressions in existing server list / server detail endpoints
+
+Status: COMPLETE
 
 ---
 

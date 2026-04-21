@@ -246,17 +246,19 @@ No separate admin UI framework — plain TailwindCSS table.
 
 ## Acceptance Criteria
 
-- [ ] `health_status` badge shown on `ServerCard` and `ServerDetail` (green/amber/red)
-- [ ] Health check cron runs daily and updates all servers
-- [ ] Dead/archived repos show "Repository not found" banner in `ServerDetail`
-- [ ] `GET /api/v1/servers/:id/versions` returns paginated release history
-- [ ] "Versions" tab in `ServerDetail` renders changelog timeline
-- [ ] `servers.latest_version` updated on each cron refresh
-- [ ] `ConfigGenerator` shows per-runtime tabs (npm/pip/cargo/docker) based on `config_template`
-- [ ] `POST /api/v1/servers/:id/report` stores report; 429 after 3 reports per user per server per day
-- [ ] Admin `DELETE /api/v1/admin/servers/:id` soft-removes server; removed servers absent from all public lists
-- [ ] `/admin` route inaccessible to non-admin users (403 from API + client redirect)
-- [ ] `npm run build` and `npm test` pass
+- [x] `health_status` badge shown on `ServerCard` and `ServerDetail` (green/amber/red)
+- [x] Health check cron runs daily and updates all servers
+- [x] Dead/archived repos show "Repository not found" banner in `ServerDetail`
+- [x] `GET /api/v1/servers/:id/versions` returns paginated release history
+- [x] "Versions" tab in `ServerDetail` renders changelog timeline
+- [x] `servers.latest_version` updated on each cron refresh
+- [x] `ConfigGenerator` shows per-runtime tabs (npm/pip/cargo/docker) based on `config_template`
+- [x] `POST /api/v1/servers/:id/report` stores report; 429 after 3 reports per user per server per day
+- [x] Admin `DELETE /api/v1/admin/servers/:id` soft-removes server; removed servers absent from all public lists
+- [x] `/admin` route inaccessible to non-admin users (403 from API + client redirect)
+- [x] `npm run build` and `npm test` pass
+
+Status: COMPLETE
 
 ---
 

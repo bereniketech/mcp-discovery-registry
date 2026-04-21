@@ -5,6 +5,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 interface UseSearchOptions {
   initialCategory?: string;
+  initialQuery?: string;
 }
 
 interface UseSearchState {
@@ -22,7 +23,7 @@ interface UseSearchState {
 }
 
 export function useSearch(options: UseSearchOptions = {}): UseSearchState {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(options.initialQuery ?? '');
   const [category, setCategory] = useState(options.initialCategory ?? '');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [results, setResults] = useState<Server[]>([]);

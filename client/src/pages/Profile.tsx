@@ -25,7 +25,7 @@ export function Profile() {
       setError(null);
 
       try {
-        const [favoriteData, submissionData] = await Promise.all([
+        const [favoriteResponse, submissionResponse] = await Promise.all([
           apiClient.getMyFavorites(session.access_token),
           apiClient.getMySubmissions(session.access_token),
         ]);
@@ -34,8 +34,8 @@ export function Profile() {
           return;
         }
 
-        setFavorites(favoriteData);
-        setSubmissions(submissionData);
+        setFavorites(favoriteResponse.data);
+        setSubmissions(submissionResponse.data);
       } catch (fetchError) {
         if (!cancelled) {
           setError(fetchError instanceof Error ? fetchError.message : 'Unable to load profile activity.');

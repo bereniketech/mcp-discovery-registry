@@ -151,6 +151,7 @@ export class TrendingService {
       LEFT JOIN categories c ON c.id = sc.category_id
       LEFT JOIN server_tags st ON st.server_id = s.id
       LEFT JOIN tags t ON t.id = st.tag_id
+      WHERE s.moderation_status = 'active'
       GROUP BY
         s.id, s.name, s.slug, s.description, s.github_url, s.website_url,
         s.author_id, s.votes_count, s.favorites_count, s.readme_content,
