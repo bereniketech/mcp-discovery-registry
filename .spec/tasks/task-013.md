@@ -87,3 +87,6 @@ _Skills: /code-writing-software-development — script, GitHub API batch calls; 
 - Full seed run was not executable in this environment for the same reason.
 **Open questions:**
 - Should task status move to `done` after environment variables are configured and both limited + full seed runs are confirmed against a real database?
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z

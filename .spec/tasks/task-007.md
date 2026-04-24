@@ -70,3 +70,6 @@ _Skills: /code-writing-software-development — scoring algorithm; /postgres-pat
 **Decisions made:** Trending score is computed live in SQL from votes, stars, and 30-day recency decay (`last_commit_at`, fallback `created_at`); endpoint caches per-limit responses for 60s in-memory using route-local Map.
 **Context for next task:** Trending endpoint is mounted at `/api/v1/trending` with optional `limit` query param (default 10, min 1, max 100). Unit tests validate score weighting/recency behavior and route tests validate limit handling + cache hit behavior.
 **Open questions:** None.
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z

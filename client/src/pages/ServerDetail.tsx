@@ -11,7 +11,7 @@ import { CommentThread } from '../components/CommentThread.js';
 import { StarRating } from '../components/StarRating.js';
 import { OwnershipClaim } from '../components/OwnershipClaim.js';
 import { useAuth } from '../hooks/useAuth.js';
-import { apiClient, type HealthStatus, type Server, type ServerVersion, type ToolSchema } from '../lib/api.js';
+import { apiClient, type HealthStatus, type Server, type ServerVersion } from '../lib/api.js';
 
 const STALE_DAYS_THRESHOLD = 90;
 const DEFAULT_SERVER_OG_IMAGE = 'https://avatars.githubusercontent.com/u/9919?s=400&v=4';
@@ -22,98 +22,6 @@ const HEALTH_BADGE_STYLES: Record<HealthStatus, { background: string; color: str
   dead: { background: '#fee2e2', color: '#991b1b', label: 'Archived / not found' },
   unknown: { background: '#f3f4f6', color: '#374151', label: 'Status unknown' },
 };
-
-function parseToolSchemasFromReadme(readmeContent: string | null | undefined): ToolSchema[] {
-  if (!readmeContent) {
-    return [];
-  }
-
-  const blockMatcher = /```json\s*([\s\S]*?)```/gi;
-  const discovered: ToolSchema[] = [];
-  let blockMatch: RegExpExecArray | null = blockMatcher.exec(readmeContent);
-
-  while (blockMatch) {
-    const payload = blockMatch[1] ?? '';
-
-    try {
-      const parsed = JSON.parse(payload) as unknown;
-      discovered.push(...extractToolSchemas(parsed));
-    } catch {
-      // Ignore malformed blocks and keep scanning for valid schemas.
-    }
-
-    blockMatch = blockMatcher.exec(readmeContent);
-  }
-
-  const deduped = new Map<string, ToolSchema>();
-  for (const schema of discovered) {
-    deduped.set(schema.name, schema);
-  }
-
-  return Array.from(deduped.values());
-}
-
-function extractToolSchemas(payload: unknown): ToolSchema[] {
-  if (!payload || typeof payload !== 'object') {
-    return [];
-  }
-
-  const data = payload as Record<string, unknown>;
-  const directTools = normalizeTools(data.tools);
-  if (directTools.length > 0) {
-    return directTools;
-  }
-
-  const mcpServers = data.mcpServers;
-  if (!mcpServers || typeof mcpServers !== 'object') {
-    return [];
-  }
-
-  const aggregated: ToolSchema[] = [];
-  for (const serverConfig of Object.values(mcpServers as Record<string, unknown>)) {
-    if (!serverConfig || typeof serverConfig !== 'object') {
-      continue;
-    }
-
-    const serverTools = normalizeTools((serverConfig as Record<string, unknown>).tools);
-    aggregated.push(...serverTools);
-  }
-
-  return aggregated;
-}
-
-function normalizeTools(value: unknown): ToolSchema[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .map((item) => {
-      if (!item || typeof item !== 'object') {
-        return null;
-      }
-
-      const entry = item as Record<string, unknown>;
-      const name = typeof entry.name === 'string' ? entry.name : null;
-
-      if (!name) {
-        return null;
-      }
-
-      const schema: ToolSchema = {
-        name,
-        inputSchema: entry.inputSchema,
-        outputSchema: entry.outputSchema,
-      };
-
-      if (typeof entry.description === 'string') {
-        schema.description = entry.description;
-      }
-
-      return schema;
-    })
-    .filter((item): item is ToolSchema => item !== null);
-}
 
 function isStale(lastCommitAt: string | null | undefined): boolean {
   if (!lastCommitAt) {

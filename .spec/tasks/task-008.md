@@ -76,3 +76,6 @@ _Skills: /build-website-web-app — React + Vite + Tailwind, routing, responsive
 **Decisions made:** Implemented a route-shell architecture with nested routes under a reusable layout; used CSS-driven responsive collapse for sidebar without adding extra dependencies; added an API client class with typed methods for all current backend endpoints and auth token support; initialized Supabase as nullable when env vars are missing so app boot remains stable in local/dev environments.
 **Context for next task:** Routing, layout scaffolding, API module, and Supabase client are ready for real data wiring; pages are placeholders and can now consume apiClient methods; sidebar links currently use placeholder categories and can be replaced by API-driven category data.
 **Open questions:** Task step 2 mentions TailwindCSS v4, but workspace currently uses TailwindCSS v3.4.x. Implementation follows existing project version to avoid cross-task dependency churn.
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z

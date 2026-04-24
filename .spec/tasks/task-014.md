@@ -91,3 +91,6 @@ _Skills: /tdd-workflow — test structure, coverage targets; /code-writing-softw
 
 **Open questions:**
 - Optional future cleanup: migrate client tests from manual `act/createRoot` style to RTL helpers to reduce noisy `act(...)` warnings.
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z

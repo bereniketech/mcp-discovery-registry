@@ -79,3 +79,6 @@ _Skills: /build-website-web-app — detail page, Markdown rendering; /code-writi
 **Decisions made:** Implemented a full detail route component at `/servers/:slug` with optimistic vote/favorite actions, README rendering via `react-markdown` + `remark-gfm` + `rehype-highlight`, and sanitization through `dompurify`; built a config generator that outputs `mcpServers` JSON for Claude Desktop and Cursor and copies via Clipboard API; added tool-schema accordion rendering from API payload when available and README JSON code-block fallback parsing when not.
 **Context for next task:** Detail page now loads server metadata by slug, shows stale-maintenance warning when `lastCommitAt` is older than 90 days, supports tag addition with autocomplete suggestions and slug-format enforcement, and includes GitHub stats + taxonomy chips in a responsive layout.
 **Open questions:** Backend currently does not expose persisted tool schema fields on server records; UI supports API-provided schemas when present and falls back to extracting likely schemas from README JSON blocks.
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z

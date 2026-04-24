@@ -95,3 +95,6 @@ _Skills: /code-writing-software-development — service layer, API routes; /api-
 
 **Open questions:**
 - The design spec also mentions tool schemas/install/config fields not present in DB yet; confirm whether those arrive in a later migration/task.
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z

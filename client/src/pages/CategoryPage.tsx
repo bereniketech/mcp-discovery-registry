@@ -132,7 +132,6 @@ export function CategoryPage() {
         {loading && (
           <div className="server-grid">
             {Array.from({ length: 6 }).map((_, i) => (
-              // eslint-disable-next-line react/no-array-index-key
               <div key={i} className="server-card server-card--skeleton" aria-hidden="true" />
             ))}
           </div>

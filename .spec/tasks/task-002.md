@@ -77,3 +77,6 @@ _Skills: /postgres-patterns — schema, indexes, RLS, full-text search; /databas
 **Decisions made:** Manual SQL migrations were created to unblock progress when `drizzle-kit generate` could not be executed reliably in the local terminal; RLS uses `(SELECT auth.uid())` wrapper pattern; full-text search uses weighted `tsvector` trigger (`A`: name, `B`: description, `C`: readme_content).
 **Context for next task:** DB layer scaffolding is ready; run migrations against a real Supabase instance once `DATABASE_URL` is available, then run `db:seed` and verify RLS behavior with authenticated users.
 **Open questions:** Need Supabase credentials in environment to execute and validate migration + policy behavior end-to-end.
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z

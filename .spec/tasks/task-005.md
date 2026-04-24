@@ -91,3 +91,6 @@ _Skills: /code-writing-software-development — search logic; /postgres-patterns
 **Context for next task:** Search endpoint is fully functional. `GET /api/v1/servers` accepts `q`, `category`, `tags[]`, `sort`, `page`, `per_page`. All TypeScript types are strict (0 errors). `tsc --noEmit` and `vitest run` both pass clean.
 
 **Open questions:** None.
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z

@@ -115,3 +115,6 @@ _Skills: /code-writing-software-development — service layer, toggle logic; /ap
 
 **Open questions:**
 - Acceptance text references `upvote_count`, while schema uses `votes_count`; implementation keeps `votes_count` in sync.
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z

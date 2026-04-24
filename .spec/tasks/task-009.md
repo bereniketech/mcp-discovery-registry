@@ -77,3 +77,6 @@ _Skills: /build-website-web-app — components, responsive layout; /code-writing
 **Decisions made:** Implemented home search as a debounced (300ms) hook-backed flow against `GET /api/v1/servers`; used URL query param `category` on `/` so sidebar category clicks filter home results without route churn; loaded trending via `GET /api/v1/trending?limit=10`; added API category method with graceful fallback to derive categories from server listings when `/api/v1/categories` is unavailable.
 **Context for next task:** Home now renders a real discovery experience with search, tag/category filters, trending strip, result cards, no-results suggestions, and responsive behavior; sidebar category links are dynamic and API-backed with fallback resilience.
 **Open questions:** Task step references `GET /api/v1/categories`, but current backend routes expose no categories endpoint; client currently supports this via fallback derivation from `listServers` until backend endpoint is added.
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z

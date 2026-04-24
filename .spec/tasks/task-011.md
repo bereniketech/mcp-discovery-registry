@@ -98,3 +98,6 @@ _Skills: /build-website-web-app — auth UI, protected routes; /code-writing-sof
 - The OAuth callback URL that must be added to the GitHub OAuth app and Supabase settings is: `<origin>/auth/callback`.
 
 **Open questions:** _(none)_
+
+Status: COMPLETE
+Completed: 2026-04-24T00:00:00Z
